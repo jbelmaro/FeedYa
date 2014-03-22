@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+android:orientation="horizontal"
+android:layout_width="match_parent"
+android:layout_height="match_parent" 
+android:background="@android:color/background_light"
+android:paddingRight="10dp">
+   
+    <ImageView
+        android:id="@+id/article_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/feed_image"
+        android:scaleType="fitCenter" />
+
+    <TextView
+        android:id="@+id/article_title"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/article_icon"
+        android:fontFamily="sans-serif"
+        android:gravity="center_vertical"
+        android:paddingLeft="10dp"
+        android:textColor="@color/home_button_normal"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+		<TextView
+		    android:id="@+id/article_time"
+		    android:layout_width="fill_parent"
+		    android:layout_height="wrap_content"
+		    android:layout_alignParentBottom="true"
+		    android:layout_alignParentRight="true"
+		    android:layout_below="@+id/article_title"
+		    android:fontFamily="sans-serif"
+		    android:gravity="right"
+		    android:paddingLeft="10dp"
+		    android:textColor="#316CE2"
+		    android:textSize="12sp"
+		    android:textStyle="italic"
+		    android:paddingBottom="3dp" />
+
+</RelativeLayout>

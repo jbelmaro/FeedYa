@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.jbelmaro.feedya"
+    android:installLocation="auto"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk
+        android:minSdkVersion="16"
+        android:targetSdkVersion="19" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:logo="@drawable/feedyatitle"
+        android:theme="@style/FeedYaTheme" >
+        <activity
+            android:name="com.jbelmaro.feedya.SplashScreenActivity"
+            android:label="@string/app_name"
+            android:theme="@style/FeedYaTheme.NoTitle" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.jbelmaro.feedya.MainActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/app_name" >
+        </activity>
+        <activity
+            android:name="com.jbelmaro.feedya.NewsActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/news_name" >
+        </activity>
+        <activity
+            android:name="com.jbelmaro.feedya.ArticleActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/article_name" >
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.jbelmaro.feedya.SearchActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/search_name" >
+        </activity>
+        <activity
+            android:name="com.jbelmaro.feedya.LoginActivity"
+            android:label="@string/title_activity_login"
+            android:windowSoftInputMode="adjustResize|stateVisible" >
+        </activity>
+        <activity
+            android:name="com.jbelmaro.feedya.LoginFeedlyActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/title_activity_login_feedly" >
+        </activity>
+        <activity
+            android:name="com.jbelmaro.feedya.SettingsActivity"
+            android:label="@string/title_activity_settings" >
+        </activity>
+
+        <meta-data
+            android:name="com.crashlytics.ApiKey"
+            android:value="e43c917695a63a7ab03655377c3f53ee44462b6d" />
+
+        <activity
+            android:name="com.jbelmaro.feedya.CategoryActivity"
+            android:label="@string/title_activity_category" >
+        </activity>
+    </application>
+
+</manifest>
