@@ -2,37 +2,39 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#eeeeee"
->
-	
-     <TextView
-         android:id="@+id/title_list_activity_news"
-         android:layout_width="match_parent"
-         android:layout_height="wrap_content"
-         android:layout_gravity="top"
-         android:background="#316CE2"
-         android:gravity="center"
-         android:paddingBottom="6dp"
-         android:paddingTop="6dp"
-         android:textColor="#fff"
-         android:textSize="16sp" />
+    android:fitsSystemWindows="true"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/title_list_activity_news"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="#316CE2"
+        android:gravity="center"
+        android:paddingBottom="6dp"
+        android:paddingTop="6dp"
+        android:textColor="#fff"
+        android:textSize="16sp" />
+
     <ProgressBar
         android:id="@+id/marker_progress"
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:indeterminate="true"
-        android:layout_gravity="center" />
-	<ListView
-	    android:id="@android:id/list"
-	    android:layout_width="fill_parent"
-	    android:layout_height="fill_parent"
-	    android:drawSelectorOnTop="false" 
-	    android:divider="@android:color/transparent"
-  		android:dividerHeight="10.0sp"
-  		android:layout_marginLeft="10dp"
-  		android:layout_marginRight="10dp" 
-		/>
+        android:layout_gravity="center"
+        android:indeterminate="true" />
+
+    <ListView
+        android:id="@android:id/list"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="10.0sp"
+        android:drawSelectorOnTop="false"
+        android:paddingBottom="10dp"
+        android:paddingTop="10dp" />
 
 </LinearLayout>

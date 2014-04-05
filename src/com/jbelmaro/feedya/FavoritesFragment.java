@@ -48,7 +48,7 @@ public class FavoritesFragment extends ListFragment {
                         "database feed:\n" + "\nTitle: " + c.getString(0) + "\nIMAGE: " + c.getString(1)
                                 + "\nfeedURL: " + c.getString(2) + "\nimageURL: " + c.getString(3));
 
-                feedIcon = Utils.downloadBitmap(c.getString(3));
+                feedIcon = Utils.downloadBitmap(c.getString(3),false);
                 Bitmap circleBitmap = Bitmap.createBitmap(feedIcon.getWidth(), feedIcon.getHeight(),
                         Bitmap.Config.ARGB_8888);
 
@@ -60,7 +60,7 @@ public class FavoritesFragment extends ListFragment {
                 Canvas canvas = new Canvas(circleBitmap);
                 canvas.drawCircle(feedIcon.getWidth() / 2, feedIcon.getHeight() / 2,
                         (float) (feedIcon.getWidth() / 2 - 0.1), paint);
-                listA.add(new FeedItemBean(c.getString(0), circleBitmap, null, c.getString(2), c.getString(3), null));
+                listA.add(new FeedItemBean(c.getString(0), circleBitmap, null, c.getString(2), c.getString(3), null, 0));
             } while (c.moveToNext());
         }
         Log.i("FavoritesFragment", "DB STATUS: " + db.getPath());

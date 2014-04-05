@@ -62,6 +62,7 @@ public class FeedListItemAdapter extends ArrayAdapter<FeedItemBean> {
     static class ViewHolder {
         protected TextView text;
         protected ImageView icon;
+        protected TextView count;
         protected ImageButton favorite;
     }
 
@@ -75,6 +76,7 @@ public class FeedListItemAdapter extends ArrayAdapter<FeedItemBean> {
             viewHolder.text = (TextView) view.findViewById(R.id.feed_title);
             viewHolder.icon = (ImageView) view.findViewById(R.id.feed_icon);
             viewHolder.favorite = (ImageButton) view.findViewById(R.id.buttonFav);
+            viewHolder.count = (TextView) view.findViewById(R.id.feed_count);
             view.setTag(viewHolder);
         } else {
             view = convertView;
@@ -163,7 +165,7 @@ public class FeedListItemAdapter extends ArrayAdapter<FeedItemBean> {
                                             tarea.execute(new String[] {});
 
                                         } else {
-                                            Toast.makeText(getContext(), "No hay conexión disponible en este momento",
+                                            Toast.makeText(getContext(), R.string.no_connection,
                                                     Toast.LENGTH_LONG).show();
                                         }
 
@@ -195,6 +197,7 @@ public class FeedListItemAdapter extends ArrayAdapter<FeedItemBean> {
         private String authCode;
         private Resources resources;
         private HttpResponse response;
+
         public FeedAsincrono(String authCode, Resources resources) {
             this.authCode = authCode;
             this.resources = resources;
@@ -205,7 +208,7 @@ public class FeedListItemAdapter extends ArrayAdapter<FeedItemBean> {
         protected Boolean doInBackground(String... params) {
 
             response = Utils.addSubscription(authCode, resources, subs);
-            
+
             return true;
         }
 

@@ -10,8 +10,9 @@ public class ArticleItemBean {
     private String iconURL;
     private String time;
     private String id;
+    private boolean unread;
 
-    public ArticleItemBean(String t, Bitmap i, String articleURL, String iconURL, String time, String id) {
+    public ArticleItemBean(String t, Bitmap i, String articleURL, String iconURL, String time, String id, boolean unread) {
         // TODO Auto-generated constructor stub
         title = t;
         icon = i;
@@ -19,6 +20,8 @@ public class ArticleItemBean {
         this.articleURL = articleURL;
         this.setTime(time);
         this.setId(id);
+        this.unread = unread;
+
     }
 
     public String getTitle() {
@@ -67,6 +70,14 @@ public class ArticleItemBean {
 
     public void setIconURL(String iconURL) {
         this.iconURL = iconURL;
+    }
+
+    public boolean isUnread() {
+        return unread;
+    }
+
+    public void setUnread(boolean unread) {
+        this.unread = unread;
     }
 
 }

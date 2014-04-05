@@ -6,15 +6,18 @@ import java.util.List;
 import org.apache.http.HttpResponse;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.support.v4.app.FragmentActivity;
 import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.view.WindowManager;
+import android.view.ViewGroup.LayoutParams;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
@@ -27,16 +30,20 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.jbelmaro.feedya.FeedListItemAdapter.ViewHolder;
+import com.jbelmaro.feedya.util.CategoryItem;
 import com.jbelmaro.feedya.util.FeedItemBean;
 import com.jbelmaro.feedya.util.Utils;
 
 public class CategoryAdapter extends BaseExpandableListAdapter {
 
     private Context context;
-    private List<String> categoriesHeader;
+    private FragmentActivity fragment;
+    private List<CategoryItem> categoriesHeader;
     private HashMap<String, List<FeedItemBean>> listFeed;
 
-    public CategoryAdapter(Context context, List<String> categoriesHeader, HashMap<String, List<FeedItemBean>> listFeed) {
+    public CategoryAdapter(FragmentActivity f, Context context, List<CategoryItem> categoriesHeader,
+            HashMap<String, List<FeedItemBean>> listFeed) {
+        fragment = f;
         this.context = context;
         this.categoriesHeader = categoriesHeader;
         this.listFeed = listFeed;
@@ -44,12 +51,11 @@ public class CategoryAdapter extends BaseExpandableListAdapter {
 
     @Override
     public Object getChild(int groupPosition, int childPosition) {
-        return this.listFeed.get(this.categoriesHeader.get(groupPosition)).get(childPosition);
+        return this.listFeed.get(this.categoriesHeader.get(groupPosition).getTitle()).get(childPosition);
     }
 
     @Override
     public long getChildId(int groupPosition, int childPosition) {
-        // TODO Auto-generated method stub
         return childPosition;
     }
 
@@ -67,6 +73,7 @@ public class CategoryAdapter extends BaseExpandableListAdapter {
             viewHolder.text = (TextView) convertView.findViewById(R.id.feed_title);
             viewHolder.icon = (ImageView) convertView.findViewById(R.id.feed_icon);
             viewHolder.favorite = (ImageButton) convertView.findViewById(R.id.buttonFav);
+            viewHolder.count = (TextView) convertView.findViewById(R.id.feed_count);
             convertView.setTag(viewHolder);
         }
         final ViewHolder holder = (ViewHolder) convertView.getTag();
@@ -74,6 +81,7 @@ public class CategoryAdapter extends BaseExpandableListAdapter {
         holder.icon.setImageBitmap(child.getIcon());
         holder.icon.getLayoutParams().height = 120;
         holder.icon.getLayoutParams().width = 120;
+        holder.count.setText("" + child.getCount());
         holder.favorite.setFocusable(false);
 
         holder.favorite.setImageResource(R.drawable.ic_menu_moreoverflow_normal_holo_light);
@@ -81,7 +89,7 @@ public class CategoryAdapter extends BaseExpandableListAdapter {
         View.OnClickListener imgButtonHandler = new View.OnClickListener() {
 
             PopupWindow popupWindow;
-            String[] popUpContents = {"Borrar Subscripcion"};
+            String[] popUpContents = {"Borrar Subscripcion", "Marcar Como Leído"};
 
             @Override
             public void onClick(final View v) {
@@ -113,31 +121,44 @@ public class CategoryAdapter extends BaseExpandableListAdapter {
                 listPopup.setOnItemClickListener(new OnItemClickListener() {
 
                     @Override
-                    public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-                        popupWindow.dismiss();
+                    public void onItemClick(AdapterView<?> arg0, View arg1, int item, long arg3) {
                         SharedPreferences settings = v.getContext().getSharedPreferences("FeedYa!Settings", 0);
-                        HttpResponse response = Utils.deleteSubscription(settings.getString("authCode", "0"),
-                                v.getResources(), child.getFeedURL());
-                        if (response.getStatusLine().getStatusCode() == 200) {
-                            Toast.makeText(v.getContext(), "Subscripcion borrada", Toast.LENGTH_LONG).show();
-                            List<FeedItemBean> listABorrar = listFeed.get(categoriesHeader.get(groupPosition));
-                            listABorrar.remove(childPosition);
-                            if (listABorrar.size() == 0) {
-                                Log.v("CategoryAdapter",
-                                        "ESTA VACIA: " + listFeed.size() + " " + categoriesHeader.get(groupPosition));
-                                listFeed.remove(categoriesHeader.get(groupPosition));
-                                categoriesHeader.remove(groupPosition);
+                        if (item == 0) {
+                            popupWindow.dismiss();
+
+                            HttpResponse response = Utils.deleteSubscription(settings.getString("authCode", "0"),
+                                    v.getResources(), child.getFeedURL());
+                            if (response.getStatusLine().getStatusCode() == 200) {
+                                Toast.makeText(v.getContext(), R.string.subs_del, Toast.LENGTH_SHORT).show();
+                                List<FeedItemBean> listABorrar = listFeed.get(categoriesHeader.get(groupPosition)
+                                        .getTitle());
+                                listABorrar.remove(childPosition);
+                                if (listABorrar.size() == 0) {
+                                    Log.v("CategoryAdapter", "ESTA VACIA: " + listFeed.size() + " "
+                                            + categoriesHeader.get(groupPosition).getTitle());
+                                    listFeed.remove(categoriesHeader.get(groupPosition).getTitle());
+                                    categoriesHeader.remove(groupPosition);
+                                }
+                                notifyDataSetChanged();
+                            } else {
+                                Toast.makeText(v.getContext(), R.string.subs_del_error, Toast.LENGTH_LONG)
+                                        .show();
                             }
-                            notifyDataSetChanged();
                         } else {
-                            Toast.makeText(v.getContext(), "Se ha producido un error al borrar", Toast.LENGTH_LONG)
-                                    .show();
+                            popupWindow.dismiss();
+                            String authCode = settings.getString("authCode", "0");
+                            Utils.markAsReadFeed(authCode, arg1.getResources(), child.getFeedURL());
+
+                            categoriesHeader.get(groupPosition).setItemCount(
+                                    categoriesHeader.get(groupPosition).getItemCount() - child.getCount());
+                            child.setCount(0);
+                            notifyDataSetChanged();
                         }
                     }
                 });
                 popupWindow.setFocusable(true);
                 popupWindow.setWidth(400);
-                popupWindow.setHeight(WindowManager.LayoutParams.WRAP_CONTENT);
+                popupWindow.setHeight(LayoutParams.WRAP_CONTENT);
 
                 // set the list view as pop up window content
                 popupWindow.setContentView(listPopup);
@@ -153,12 +174,12 @@ public class CategoryAdapter extends BaseExpandableListAdapter {
 
     @Override
     public int getChildrenCount(int groupPosition) {
-        return this.listFeed.get(this.categoriesHeader.get(groupPosition)).size();
+        return this.listFeed.get(this.categoriesHeader.get(groupPosition).getTitle()).size();
     }
 
     @Override
     public Object getGroup(int groupPosition) {
-        return this.categoriesHeader.get(groupPosition);
+        return this.categoriesHeader.get(groupPosition).getTitle();
     }
 
     @Override
@@ -172,7 +193,7 @@ public class CategoryAdapter extends BaseExpandableListAdapter {
     }
 
     @Override
-    public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
+    public View getGroupView(final int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
         String headerTitle = (String) getGroup(groupPosition);
         if (convertView == null) {
             LayoutInflater infalInflater = (LayoutInflater) this.context
@@ -181,39 +202,47 @@ public class CategoryAdapter extends BaseExpandableListAdapter {
         }
 
         TextView lblListHeader = (TextView) convertView.findViewById(R.id.category);
+        TextView countView = (TextView) convertView.findViewById(R.id.category_count);
+        countView.setText(" " + categoriesHeader.get(groupPosition).getItemCount());
         lblListHeader.setTypeface(null, Typeface.BOLD_ITALIC);
         lblListHeader.setText(headerTitle);
+        lblListHeader.setOnClickListener(new OnClickListener() {
 
+            @Override
+            public void onClick(View v) {
+                Log.i("FavoritesFragment", "Item clicked: " + groupPosition);
+                Intent intent = new Intent(context, CategoryActivity.class);
+                intent.putExtra("titulo", categoriesHeader.get(groupPosition).getTitle());
+                intent.putExtra("categoryId", categoriesHeader.get(groupPosition).getCategoryId());
+                context.startActivity(intent);
+                fragment.overridePendingTransition(R.anim.anim_open, R.anim.anim_out);
+            }
+        });
         return convertView;
     }
 
     @Override
     public boolean hasStableIds() {
-        // TODO Auto-generated method stub
         return false;
     }
 
     @Override
     public boolean isChildSelectable(int arg0, int arg1) {
-        // TODO Auto-generated method stub
         return true;
     }
 
     @Override
     public void notifyDataSetChanged() {
-        // TODO Auto-generated method stub
         super.notifyDataSetChanged();
     }
 
     @Override
     public void notifyDataSetInvalidated() {
-        // TODO Auto-generated method stub
         super.notifyDataSetInvalidated();
     }
 
     @Override
     public boolean isEmpty() {
-        // TODO Auto-generated method stub
         return super.isEmpty();
     }
 }

@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -26,6 +27,7 @@ import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.jbelmaro.feedya.util.ArticleItemBean;
@@ -42,6 +44,7 @@ public class LecturaFragment extends ListFragment {
     private LinearLayout layout;
     private ProgressBar dialog;
     private ListView listLectura;
+    private TextView mNoResultsView;
     private boolean add;
     private String dateFormatted = "";
 
@@ -50,16 +53,22 @@ public class LecturaFragment extends ListFragment {
         Log.i("LecturaFragment", "Item clicked: " + id);
         Intent intent = new Intent(this.getActivity(), ArticleActivity.class);
         intent.putExtra("titulo", "Últimas Noticias");
-        intent.putExtra("noticia", load.items.get(position).summary.content);
+        if (load.items.get(position).content != null)
+            intent.putExtra("noticia", load.items.get(position).content.content);
+        else
+            intent.putExtra("noticia", load.items.get(position).summary.content);
         intent.putExtra("noticiaURL", load.items.get(position).originId);
         intent.putExtra("noticiaTitulo", load.items.get(position).title);
         intent.putExtra("noticiaLINK", load.items.get(position).originId);
         intent.putExtra("autorNoticia", load.items.get(position).author);
         intent.putExtra("fechaNoticia", dateFormatted);
         intent.putExtra("idNoticia", load.items.get(position).id);
+        load.items.get(position).unread = false;
+        ((TextView) v.findViewById(R.id.article_title)).setTextColor(Color.parseColor("#AAAAAA"));
+        adapter.notifyDataSetChanged();
 
         startActivity(intent);
-        getActivity().overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left);
+        getActivity().overridePendingTransition(R.anim.anim_open, R.anim.anim_out);
     }
 
     @Override
@@ -79,7 +88,7 @@ public class LecturaFragment extends ListFragment {
             loadFeeds = new LoadFeedsTask(authCode, this.getResources(), user);
             loadFeeds.execute(new String[] {});
         } else {
-            Toast.makeText(getActivity(), "No hay conexión disponible en este momento", Toast.LENGTH_LONG).show();
+            Toast.makeText(getActivity(), R.string.no_connection, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -89,7 +98,30 @@ public class LecturaFragment extends ListFragment {
         Log.i("LecturaFragment", "tamaño: " + listA.size());
 
         layout = (LinearLayout) inflater.inflate(R.layout.fragment_ultimahora, container, false);
+        mNoResultsView = (TextView) layout.findViewById(R.id.no_results_text_view);
+        listLectura = (ListView) layout.findViewById(android.R.id.list);
+        SharedPreferences settings = getActivity().getSharedPreferences("FeedYa!Settings", 0);
+        final String authCode = settings.getString("authCode", "0");
+        final String user = settings.getString("profileId", "0");
+        listLectura.setOnItemLongClickListener(new OnItemLongClickListener() {
 
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int arg2, long arg3) {
+                HttpResponse response = Utils.deleteFromSaveLater(authCode, getResources(), user,
+                        ((ArticleItemBean) getListView().getItemAtPosition(arg2)).getId());
+                if (response.getStatusLine().getStatusCode() == 200) {
+                    Toast.makeText(getActivity().getApplicationContext(), "Borrado de Lista de Lectura",
+                            Toast.LENGTH_LONG).show();
+                    listA.remove(arg2);
+                    adapter.notifyDataSetChanged();
+                } else {
+                    Toast.makeText(getActivity().getApplicationContext(), "No se ha borrado correctamente",
+                            Toast.LENGTH_LONG).show();
+                }
+                return true;
+            }
+
+        });
         return layout;
     }
 
@@ -142,12 +174,14 @@ public class LecturaFragment extends ListFragment {
 
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
                                 load.items.get(i).visual.getUrl(),
-                                load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id));
+                                load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id, load.items
+                                        .get(i).unread));
 
                     } else {
                         articleIcon = null;
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                "", load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id));
+                                "", load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id,
+                                load.items.get(i).unread));
                     }
                 }
 
@@ -167,25 +201,7 @@ public class LecturaFragment extends ListFragment {
                 adapter.notifyDataSetChanged();
                 listLectura.invalidateViews();
                 setListAdapter(adapter);
-                listLectura.setOnItemLongClickListener(new OnItemLongClickListener() {
 
-                    @Override
-                    public boolean onItemLongClick(AdapterView<?> parent, View view, int arg2, long arg3) {
-                        HttpResponse response = Utils.deleteFromSaveLater(authCode, resources, user,
-                                ((ArticleItemBean) getListView().getItemAtPosition(arg2)).getId());
-                        if (response.getStatusLine().getStatusCode() == 200) {
-                            Toast.makeText(activity.getActivity().getApplicationContext(),
-                                    "Borrado de Lista de Lectura", Toast.LENGTH_LONG).show();
-                            listA.remove(arg2);
-                            adapter.notifyDataSetChanged();
-                        } else {
-                            Toast.makeText(activity.getActivity().getApplicationContext(),
-                                    "No se ha borrado correctamente", Toast.LENGTH_LONG).show();
-                        }
-                        return true;
-                    }
-
-                });
             }
 
         }
@@ -196,6 +212,8 @@ public class LecturaFragment extends ListFragment {
                 dialog.setVisibility(View.VISIBLE);
                 listLectura.setVisibility(View.GONE);
             }
+
+
         }
 
         @Override
@@ -275,6 +293,8 @@ public class LecturaFragment extends ListFragment {
         if (networkInfo != null && networkInfo.isConnected()) {
 
             if (listA.size() == 0) {
+                loadFeeds = new LoadFeedsTask(authCode, this.getResources(), user);
+                loadFeeds.execute(new String[] {});
                 listA = new ArrayList<ArticleItemBean>();
                 addToList = new AddFeedTask(this, authCode, getResources(), user);
                 addToList.execute(new String[] {});
@@ -290,7 +310,7 @@ public class LecturaFragment extends ListFragment {
                 editor.commit();
             }
         } else {
-            Toast.makeText(getActivity(), "No hay conexión disponible en este momento", Toast.LENGTH_LONG).show();
+            Toast.makeText(getActivity(), R.string.no_connection, Toast.LENGTH_LONG).show();
         }
         super.onResume();
     }

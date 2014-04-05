@@ -6,6 +6,8 @@ public class Visual
     private String height;
     private String width;
     private String contentType;
+    private Long expirationDate;
+    private String processor;
 	public String getUrl() {
 		return url;
 	}
@@ -30,5 +32,17 @@ public class Visual
 	public void setContentType(String contentType) {
 		this.contentType = contentType;
 	}
+    public Long getExpirationDate() {
+        return expirationDate;
+    }
+    public void setExpirationDate(Long expirationDate) {
+        this.expirationDate = expirationDate;
+    }
+    public String getProcessor() {
+        return processor;
+    }
+    public void setProcessor(String processor) {
+        this.processor = processor;
+    }
     
 }

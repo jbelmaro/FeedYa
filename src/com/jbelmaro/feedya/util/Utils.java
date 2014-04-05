@@ -2,6 +2,7 @@ package com.jbelmaro.feedya.util;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,6 +30,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
 import android.graphics.Bitmap;
@@ -124,6 +126,71 @@ public class Utils {
 
         }
         return bean;
+    }
+
+    public static Counts LoadUnreadCounts(String authCode, Resources resources) {
+        URL url = null;
+        HttpURLConnection connection = null;
+        String line;
+        StringBuilder builder = new StringBuilder();
+        BufferedReader reader = null;
+        Counts counts = null;
+
+        Properties props = new Properties();
+        InputStream rawResource = null;
+        try {
+            rawResource = resources.openRawResource(R.raw.feedya);
+
+            props.load(rawResource);
+            System.out.println("The properties are now loaded");
+            System.out.println("properties: " + props);
+        } catch (NotFoundException e) {
+            System.err.println("Did not find raw resource: " + e);
+        } catch (IOException e) {
+            System.err.println("Failed to open microlog property file");
+        } finally {
+            try {
+                rawResource.close();
+            } catch (IOException e) {
+
+                e.printStackTrace();
+            }
+        }
+        String markersURL = props.getProperty("markersPath");
+
+        try {
+            url = new URL(markersURL + "/counts");
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setReadTimeout(10000 /* milliseconds */);
+            connection.setConnectTimeout(15000 /* milliseconds */);
+            connection.setRequestMethod("GET");
+            connection.setDoInput(true);
+            connection.setRequestProperty("Authorization", authCode);
+            reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            ObjectMapper mapper = new ObjectMapper();
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
+            }
+            counts = mapper.readValue(builder.toString(), Counts.class);
+        } catch (MalformedURLException e) {
+            //
+            e.printStackTrace();
+        } catch (IOException e) {
+            //
+            e.printStackTrace();
+        } catch (Exception e) {
+            //
+            e.printStackTrace();
+        } finally {
+            try {
+                reader.close();
+            } catch (IOException e) {
+                //
+                e.printStackTrace();
+            }
+        }
+
+        return counts;
     }
 
     public static StreamContentResponse LoadFeeds(String query, String authCode, Resources resources) {
@@ -288,7 +355,7 @@ public class Utils {
 
         try {
             url = new URL(feedURL + "/contents?streamId=user%2F" + URLEncoder.encode(user, "UTF-8")
-                    + "%2Fcategory%2Fglobal.all&count=10");
+                    + "%2Fcategory%2Fglobal.all&count=10&ranked=newest");
             System.out.println("URL: " + url);
             connection = (HttpURLConnection) url.openConnection();
             connection.setReadTimeout(10000 /* milliseconds */);
@@ -322,8 +389,7 @@ public class Utils {
         return listA;
     }
 
-    public static StreamContentResponse LoadCategory(String authCode, String categoryId,
-            Resources resources) {
+    public static StreamContentResponse LoadCategory(String authCode, String categoryId, Resources resources) {
         URL url = null;
         HttpURLConnection connection = null;
         String line;
@@ -391,8 +457,8 @@ public class Utils {
         return listA;
     }
 
-    public static StreamContentResponse LoadCategoryMore(String authCode, String categoryId,
-            Resources resources, String continuation) {
+    public static StreamContentResponse LoadCategoryMore(String authCode, String categoryId, Resources resources,
+            String continuation) {
         URL url = null;
         HttpURLConnection connection = null;
         String line;
@@ -424,8 +490,7 @@ public class Utils {
 
         try {
             url = new URL(feedURL + "/contents?streamId=" + URLEncoder.encode(categoryId, "UTF-8") + "%2F"
-                    + "&count=10&continuation="
-                    + continuation);
+                    + "&count=10&continuation=" + continuation);
             System.out.println("URL: " + url);
             connection = (HttpURLConnection) url.openConnection();
             connection.setReadTimeout(10000 /* milliseconds */);
@@ -592,13 +657,19 @@ public class Utils {
         return listF;
     }
 
-    public static Bitmap downloadBitmap(String url) {
+    public static Bitmap downloadBitmap(String url, boolean visual) {
         Bitmap image = null;
         // initilize the default HTTP client object
         InputStream response = null;
         try {
-            URL urldir = new URL("http://s2.googleusercontent.com/s2/favicons?domain=" + url);
-
+            URL urldir;
+            // URL urldir = new
+            // URL("http://s2.googleusercontent.com/s2/favicons?domain=" + url);
+            Log.v("downloadBitmap", url);
+            if (visual)
+                urldir = new URL(url);
+            else
+                urldir = new URL("http://s2.googleusercontent.com/s2/favicons?domain=" + url);
             URLConnection connection = urldir.openConnection();
             connection.setUseCaches(true);
 
@@ -1301,6 +1372,170 @@ public class Utils {
         return response;
     }
 
+    public static HttpResponse markAsReadEntry(String authCode, Resources resources, String entryId) {
+
+        Properties props = new Properties();
+        InputStream rawResource = null;
+        try {
+            rawResource = resources.openRawResource(R.raw.feedya);
+
+            props.load(rawResource);
+            System.out.println("The properties are now loaded");
+            System.out.println("properties: " + props);
+        } catch (NotFoundException e) {
+            System.err.println("Did not find raw resource: " + e);
+        } catch (IOException e) {
+            System.err.println("Failed to open microlog property file");
+        } finally {
+            try {
+                rawResource.close();
+            } catch (IOException e) {
+                //
+                e.printStackTrace();
+            }
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        String markersURL = props.getProperty("markersPath");
+        HttpPost post = new HttpPost(markersURL);
+        MarkedAsReadEntry entry = new MarkedAsReadEntry("entries", "markAsRead", entryId);
+        post.addHeader("Authorization", authCode);
+        try {
+            Log.v("Marcar como leído", entryId);
+            post.setEntity(new StringEntity(mapper.writeValueAsString(entry), "UTF8"));
+        } catch (UnsupportedEncodingException e1) {
+            //
+            e1.printStackTrace();
+        } catch (JsonProcessingException e1) {
+            //
+            e1.printStackTrace();
+        }
+        HttpClient client = new DefaultHttpClient();
+        HttpResponse response = null;
+        try {
+            response = client.execute(post);
+
+        } catch (ClientProtocolException e) {
+            //
+            e.printStackTrace();
+        } catch (IOException e) {
+            //
+            e.printStackTrace();
+        } catch (NetworkOnMainThreadException e) {
+            //
+            e.printStackTrace();
+        }
+        return response;
+    }
+
+    public static HttpResponse markAsReadFeed(String authCode, Resources resources, String feedId) {
+
+        Properties props = new Properties();
+        InputStream rawResource = null;
+        try {
+            rawResource = resources.openRawResource(R.raw.feedya);
+
+            props.load(rawResource);
+            System.out.println("The properties are now loaded");
+            System.out.println("properties: " + props);
+        } catch (NotFoundException e) {
+            System.err.println("Did not find raw resource: " + e);
+        } catch (IOException e) {
+            System.err.println("Failed to open microlog property file");
+        } finally {
+            try {
+                rawResource.close();
+            } catch (IOException e) {
+                //
+                e.printStackTrace();
+            }
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        String markersURL = props.getProperty("markersPath");
+        HttpPost post = new HttpPost(markersURL);
+        MarkAsReadFeed entry = new MarkAsReadFeed("feeds", "markAsRead", feedId);
+        post.addHeader("Authorization", authCode);
+        try {
+            Log.v("Marcar como leído", feedId);
+            post.setEntity(new StringEntity(mapper.writeValueAsString(entry), "UTF8"));
+        } catch (UnsupportedEncodingException e1) {
+            //
+            e1.printStackTrace();
+        } catch (JsonProcessingException e1) {
+            //
+            e1.printStackTrace();
+        }
+        HttpClient client = new DefaultHttpClient();
+        HttpResponse response = null;
+        try {
+            response = client.execute(post);
+
+        } catch (ClientProtocolException e) {
+            //
+            e.printStackTrace();
+        } catch (IOException e) {
+            //
+            e.printStackTrace();
+        } catch (NetworkOnMainThreadException e) {
+            //
+            e.printStackTrace();
+        }
+        return response;
+    }
+
+    public static HttpResponse markAsReadCategory(String authCode, Resources resources, Subscription subs) {
+
+        Properties props = new Properties();
+        InputStream rawResource = null;
+        try {
+            rawResource = resources.openRawResource(R.raw.feedya);
+
+            props.load(rawResource);
+            System.out.println("The properties are now loaded");
+            System.out.println("properties: " + props);
+        } catch (NotFoundException e) {
+            System.err.println("Did not find raw resource: " + e);
+        } catch (IOException e) {
+            System.err.println("Failed to open microlog property file");
+        } finally {
+            try {
+                rawResource.close();
+            } catch (IOException e) {
+                //
+                e.printStackTrace();
+            }
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        String subscriptionsURL = props.getProperty("subscriptionsPath");
+        HttpPost post = new HttpPost(subscriptionsURL);
+        post.addHeader("Authorization", authCode);
+        try {
+            Log.v("Añadir subscripcion", mapper.writeValueAsString(subs));
+            post.setEntity(new StringEntity(mapper.writeValueAsString(subs), "UTF8"));
+        } catch (UnsupportedEncodingException e1) {
+            //
+            e1.printStackTrace();
+        } catch (JsonProcessingException e1) {
+            //
+            e1.printStackTrace();
+        }
+        HttpClient client = new DefaultHttpClient();
+        HttpResponse response = null;
+        try {
+            response = client.execute(post);
+
+        } catch (ClientProtocolException e) {
+            //
+            e.printStackTrace();
+        } catch (IOException e) {
+            //
+            e.printStackTrace();
+        } catch (NetworkOnMainThreadException e) {
+            //
+            e.printStackTrace();
+        }
+        return response;
+    }
+
     public static String capitalize(String source) {
         boolean cap = true;
         char[] out = source.toCharArray();
@@ -1316,5 +1551,38 @@ public class Utils {
             }
         }
         return new String(out);
+    }
+
+    /**
+     * Call this method to delete any cache created by app
+     * 
+     * @param context
+     *            context for your application
+     */
+    public static void clearApplicationData(Context context) {
+        File cache = context.getCacheDir();
+        File appDir = new File(cache.getParent());
+        if (appDir.exists()) {
+            String[] children = appDir.list();
+            for (String s : children) {
+                File f = new File(appDir, s);
+                if (deleteDir(f))
+                    Log.i("Utils",
+                            String.format("**************** DELETED -> (%s) *******************", f.getAbsolutePath()));
+            }
+        }
+    }
+
+    private static boolean deleteDir(File dir) {
+        if (dir != null && dir.isDirectory()) {
+            String[] children = dir.list();
+            for (int i = 0; i < children.length; i++) {
+                boolean success = deleteDir(new File(dir, children[i]));
+                if (!success) {
+                    return false;
+                }
+            }
+        }
+        return dir.delete();
     }
 }

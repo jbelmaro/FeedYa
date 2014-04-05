@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Html;
@@ -29,6 +30,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.analytics.tracking.android.EasyTracker;
 import com.jbelmaro.feedya.util.ArticleItemBean;
 import com.jbelmaro.feedya.util.Item;
 import com.jbelmaro.feedya.util.SaveForLaterItem;
@@ -75,16 +77,21 @@ public class NewsActivity extends ListActivity {
         Log.i("NewsActivity", "Item clicked: " + id);
         Intent intent = new Intent(this.getApplicationContext(), ArticleActivity.class);
         intent.putExtra("titulo", titulo);
-        intent.putExtra("noticia", listaArticles.get(position).summary.content);
+        if (listaArticles.get(position).content != null)
+            intent.putExtra("noticia", listaArticles.get(position).content.content);
+        else
+            intent.putExtra("noticia", listaArticles.get(position).summary.content);
         intent.putExtra("noticiaURL", listaArticles.get(position).originId);
         intent.putExtra("noticiaTitulo", listaArticles.get(position).title);
         intent.putExtra("noticiaLINK", listaArticles.get(position).originId);
         intent.putExtra("autorNoticia", listaArticles.get(position).author);
         intent.putExtra("fechaNoticia", dateFormatted);
         intent.putExtra("idNoticia", listaArticles.get(position).id);
-
+        listaArticles.get(position).unread = false;
+        ((TextView) v.findViewById(R.id.article_title)).setTextColor(Color.parseColor("#AAAAAA"));
+        adapter.notifyDataSetChanged();
         startActivity(intent);
-        this.overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left);
+        this.overridePendingTransition(R.anim.anim_open, R.anim.anim_out);
     }
 
     @Override
@@ -161,12 +168,13 @@ public class NewsActivity extends ListActivity {
                     if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
 
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                load.items.get(i).visual.getUrl(), dateFormatted, load.items.get(i).id));
+                                load.items.get(i).visual.getUrl(), dateFormatted, load.items.get(i).id, load.items
+                                        .get(i).unread));
                         articleIcon = null;
                     } else {
                         articleIcon = null;
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                "", dateFormatted, load.items.get(i).id));
+                                "", dateFormatted, load.items.get(i).id, load.items.get(i).unread));
                     }
                 }
             }
@@ -193,10 +201,10 @@ public class NewsActivity extends ListActivity {
                         editor.putBoolean("AddedToReadList", true);
                         editor.commit();
                         Log.v("NewsActivity", "Añadido a Lista de Lectura");
-                        Toast.makeText(getApplicationContext(), "Añadido a Lista de Lectura", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getApplicationContext(), R.string.added_to_list, Toast.LENGTH_LONG).show();
 
                     } else {
-                        Toast.makeText(getApplicationContext(), "Se ha producido un error al añadir", Toast.LENGTH_LONG)
+                        Toast.makeText(getApplicationContext(), R.string.added_to_list_error, Toast.LENGTH_LONG)
                                 .show();
                     }
                     return true;
@@ -219,7 +227,6 @@ public class NewsActivity extends ListActivity {
                         endlist = true;
                         LoadMoreFeedsTask tarea = new LoadMoreFeedsTask(activity, authCode, resources);
                         tarea.execute(new String[] {source});
-                        lv.setSelection(getListAdapter().getCount() - 1);
 
                     }
                 }
@@ -267,7 +274,7 @@ public class NewsActivity extends ListActivity {
                     long diff = (new Date()).getTime() - date.getTime();
                     // DateFormat formatter = new SimpleDateFormat("HH:mm");
                     // String dateFormatted = formatter.format(date);
-                    
+
                     if ((diff / 1000) < 60)
                         dateFormatted = "hace " + Integer.toString((int) (diff / 1000)) + " seg.";
                     else if ((diff / 60000) < 60)
@@ -277,15 +284,16 @@ public class NewsActivity extends ListActivity {
                     else
                         dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60 * 24))) + " dias";
                     if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
-                        articleIcon = Utils.downloadArticleImage(load.items.get(i).visual.getUrl());
+                        //articleIcon = Utils.downloadArticleImage(load.items.get(i).visual.getUrl());
 
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                load.items.get(i).visual.getUrl(), dateFormatted, load.items.get(i).id));
+                                load.items.get(i).visual.getUrl(), dateFormatted, load.items.get(i).id, load.items
+                                        .get(i).unread));
                         articleIcon = null;
                     } else {
                         articleIcon = null;
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                "", dateFormatted, load.items.get(i).id));
+                                "", dateFormatted, load.items.get(i).id, load.items.get(i).unread));
                     }
                 }
                 adapter = new ArticleListItemAdapter(activity, listA);
@@ -296,6 +304,7 @@ public class NewsActivity extends ListActivity {
         @Override
         protected void onPostExecute(Boolean result) {
             setListAdapter(adapter);
+            lv.setSelection(getListAdapter().getCount() - 20);
 
         }
 
@@ -307,6 +316,17 @@ public class NewsActivity extends ListActivity {
     @Override
     public void onBackPressed() {
         finish();
-        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left);
+        overridePendingTransition(R.anim.anim_close, R.anim.anim_in);
+    }
+    @Override
+    public void onStart() {
+        super.onStart();
+        EasyTracker.getInstance().activityStart(this);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        EasyTracker.getInstance().activityStop(this);
     }
 }

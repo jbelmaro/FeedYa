@@ -1,35 +1,43 @@
-<android.support.v4.view.ViewPager xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/pager"
+    xmlns:ads="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".MainActivity" >
 
-    <!--
+    <android.support.v4.view.ViewPager
+        android:id="@+id/pager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/adView" >
+
+        <!--
     This title strip will display the currently visible page title, as well as the page
     titles for adjacent pages.
-    -->
-        <TextView
-            android:id="@+id/status_text"
+        -->
+
+        <android.support.v4.view.PagerTitleStrip
+            android:id="@+id/title_list_activity_news"
+            style="@style/PageTitleStriperText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:fontFamily="sans-serif-thin"
-            />
-
-    <android.support.v4.view.PagerTitleStrip
-        android:id="@+id/title_list_activity_news"
-        style="@style/PageTitleStriperText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top"
-        android:background="#316CE2"
-        android:paddingBottom="6dp"
-        android:paddingTop="6dp"
-        android:textColor="#fff" >
-
+            android:layout_gravity="top"
+            android:background="#316CE2"
+            android:paddingBottom="6dp"
+            android:paddingTop="6dp"
+            android:textColor="#fff" >
         </android.support.v4.view.PagerTitleStrip>
+    </android.support.v4.view.ViewPager>
 
-</android.support.v4.view.ViewPager>
+    <com.google.android.gms.ads.AdView
+        android:id="@+id/adView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        ads:adSize="SMART_BANNER"
+        ads:adUnitId="ca-app-pub-9633189420266305/9988814278" />
 
- 
+</RelativeLayout>

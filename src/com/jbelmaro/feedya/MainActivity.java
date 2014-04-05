@@ -13,19 +13,27 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.Window;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.SearchView;
-import android.widget.TextView;
 
-import com.jbelmaro.feedya.util.ExchangeCodeResponse;
+import com.espian.showcaseview.OnShowcaseEventListener;
+import com.espian.showcaseview.ShowcaseView;
+import com.espian.showcaseview.ShowcaseViews;
+import com.espian.showcaseview.ShowcaseViews.ItemViewProperties;
+import com.google.analytics.tracking.android.EasyTracker;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
 
-public class MainActivity extends FragmentActivity implements SearchView.OnQueryTextListener {
+public class MainActivity extends FragmentActivity implements SearchView.OnQueryTextListener, OnShowcaseEventListener {
 
     private SearchView mSearchView;
-    private TextView mStatusView;
-    SectionPagerAdapter mSectionPagerAdapter;
-    ViewPager mViewPager;
-    ExchangeCodeResponse exchangeCodeResponse;
+    private AdView adView;
+    private SectionPagerAdapter mSectionPagerAdapter;
+    private ViewPager mViewPager;
+    private ShowcaseViews mViews;
+
+    public static final float SHOWCASE_SPINNER_SCALE = 1f;
+    public static final float SHOWCASE_OVERFLOW_ITEM_SCALE = 0.5f;
+    private static final float SHOWCASE_LIKE_SCALE = 0.5f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,18 +41,20 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
         getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
 
         setContentView(R.layout.activity_main);
+        // Showcase
 
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the app.
+        adView = (AdView) findViewById(R.id.adView);
 
-        mStatusView = (TextView) findViewById(R.id.status_text);
-        mSectionPagerAdapter = new SectionPagerAdapter(getSupportFragmentManager());
+        mSectionPagerAdapter = new SectionPagerAdapter(getSupportFragmentManager(), getApplicationContext());
 
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mSectionPagerAdapter);
         // mViewPager.setOffscreenPageLimit(2);
         mViewPager.setCurrentItem(1);
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView.loadAd(adRequest);
     }
 
     @Override
@@ -58,6 +68,35 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
         setupSearchView(searchItem);
         MenuItem share = menu.findItem(R.id.share);
         share.setVisible(false);
+        SharedPreferences settings = getSharedPreferences("FeedYa!Settings", MODE_PRIVATE);
+        if (settings.getBoolean("tutorial", true)) {
+            ShowcaseView.ConfigOptions co = new ShowcaseView.ConfigOptions();
+            co.block = false;
+            mViews = new ShowcaseViews(this, new ShowcaseViews.OnShowcaseAcknowledged() {
+                @Override
+                public void onShowCaseAcknowledged(ShowcaseView showcaseView) {
+                }
+            });
+            co.showcaseId = 1234;
+
+            ShowcaseView.ConfigOptions configOptions = new ShowcaseView.ConfigOptions();
+
+            configOptions.block = true;
+            mViews.addView(new ItemViewProperties(R.id.search, R.string.showcase_title, R.string.showcase_msg,
+                    ShowcaseView.ITEM_ACTION_ITEM, SHOWCASE_OVERFLOW_ITEM_SCALE, co));
+            mViews.addView(new ShowcaseViews.ItemViewProperties(R.id.pager, R.string.showcase_title,
+                    R.string.showcase_pager, SHOWCASE_LIKE_SCALE, co));
+            mViews.addView(new ShowcaseViews.ItemViewProperties(R.id.pager, R.string.showcase_title,
+                    R.string.showcase_pager, SHOWCASE_LIKE_SCALE, co));
+            mViews.addAnimatedGestureToView(1, -500, 0, 500, 0);
+            mViews.addAnimatedGestureToView(2, 500, 0, -500, 0);
+
+            mViews.show();
+            SharedPreferences.Editor editor = settings.edit();
+
+            editor.putBoolean("tutorial", false);
+            editor.commit();
+        }
 
         return true;
     }
@@ -67,7 +106,9 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
 
         switch (item.getItemId()) {
         case R.id.action_settings:
+
             startActivity(new Intent(this, SettingsActivity.class));
+            finish();
         default:
             return super.onOptionsItemSelected(item);
         }
@@ -90,18 +131,12 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
 
     @Override
     public boolean onQueryTextChange(String newText) {
-        mStatusView.setText("Query = " + newText);
         return false;
     }
 
     @Override
     public boolean onQueryTextSubmit(String query) {
-        mStatusView.setText("Query = " + query + " : submitted");
         Log.i("ActionBar", "Nuevo!");
-        finish();
-        InputMethodManager inputManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-        inputManager.hideSoftInputFromWindow(mStatusView.getWindowToken(), 0);
-        startActivity(getIntent());
         Intent intent = new Intent();
         intent = new Intent(this, SearchActivity.class);
         intent.putExtra("busqueda", query);
@@ -114,7 +149,6 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
     }
 
     public boolean onClose() {
-        mStatusView.setText("Closed!");
         return false;
     }
 
@@ -129,7 +163,61 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
         intent.addCategory(Intent.CATEGORY_HOME);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
-        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left);
+        finish();
+        overridePendingTransition(R.anim.anim_close, R.anim.anim_in);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (adView != null) {
+            adView.resume();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (adView != null) {
+            adView.pause();
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (adView != null) {
+            adView.destroy();
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        EasyTracker.getInstance().activityStart(this);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        EasyTracker.getInstance().activityStop(this);
+    }
+
+    @Override
+    public void onShowcaseViewHide(ShowcaseView showcaseView) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onShowcaseViewShow(ShowcaseView showcaseView) {
+        // TODO Auto-generated method stub
+
+    }
 }

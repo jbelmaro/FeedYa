@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -24,6 +25,7 @@ import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.jbelmaro.feedya.util.ArticleItemBean;
@@ -49,15 +51,22 @@ public class UltimaHoraFragment extends ListFragment {
         Log.i("UltimaHoraFragment", "Item clicked: " + id);
         Intent intent = new Intent(this.getActivity(), ArticleActivity.class);
         intent.putExtra("titulo", "Últimas Noticias");
-        intent.putExtra("noticia", load.items.get(position).summary.content);
+        if (load.items.get(position).content != null)
+            intent.putExtra("noticia", load.items.get(position).content.content);
+        else
+            intent.putExtra("noticia", load.items.get(position).summary.content);
         intent.putExtra("noticiaURL", load.items.get(position).originId);
         intent.putExtra("noticiaTitulo", load.items.get(position).title);
         intent.putExtra("noticiaLINK", load.items.get(position).originId);
         intent.putExtra("autorNoticia", load.items.get(position).author);
         intent.putExtra("idNoticia", load.items.get(position).id);
         intent.putExtra("fechaNoticia", dateFormatted);
+        load.items.get(position).unread = false;
+        ((TextView)v.findViewById(R.id.article_title)).setTextColor(Color.parseColor("#AAAAAA"));
+        adapter.notifyDataSetChanged();
+
         startActivity(intent);
-        getActivity().overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left);
+        getActivity().overridePendingTransition(R.anim.anim_open, R.anim.anim_out);
     }
 
     @Override
@@ -87,6 +96,27 @@ public class UltimaHoraFragment extends ListFragment {
 
         layout = (LinearLayout) inflater.inflate(R.layout.fragment_ultimahora, container, false);
         listUltima = (ListView) layout.findViewById(android.R.id.list);
+        final SharedPreferences settings = getActivity().getSharedPreferences("FeedYa!Settings", 0);
+        final String authCode = settings.getString("authCode", "0");
+        final String user = settings.getString("profileId", "0");
+        listUltima.setOnItemLongClickListener(new OnItemLongClickListener() {
+
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int arg2, long arg3) {
+
+                Toast.makeText(getActivity().getApplicationContext(), "Añadido a Lista de Lectura", Toast.LENGTH_LONG)
+                        .show();
+                SaveForLaterItem item = new SaveForLaterItem();
+                item.setEntryId(((ArticleItemBean) getListView().getItemAtPosition(arg2)).getId());
+                Utils.saveForLater(authCode, user, getResources(), item);
+                SharedPreferences.Editor editor = settings.edit();
+                editor.putBoolean("AddedToReadList", true);
+                editor.commit();
+
+                return true;
+            }
+
+        });
         dialog = (ProgressBar) layout.findViewById(R.id.marker_progress);
 
         return layout;
@@ -141,12 +171,14 @@ public class UltimaHoraFragment extends ListFragment {
                     if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
                                 load.items.get(i).visual.getUrl(),
-                                load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id));
+                                load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id, load.items
+                                        .get(i).unread));
                         articleIcon = null;
                     } else {
                         articleIcon = null;
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                "", load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id));
+                                "", load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id,
+                                load.items.get(i).unread));
                     }
 
                 }
@@ -167,25 +199,6 @@ public class UltimaHoraFragment extends ListFragment {
                 adapter.notifyDataSetChanged();
                 listUltima.invalidateViews();
                 setListAdapter(adapter);
-                listUltima.setOnItemLongClickListener(new OnItemLongClickListener() {
-
-                    @Override
-                    public boolean onItemLongClick(AdapterView<?> parent, View view, int arg2, long arg3) {
-
-                        Toast.makeText(activity.getActivity().getApplicationContext(), "Añadido a Lista de Lectura",
-                                Toast.LENGTH_LONG).show();
-                        SaveForLaterItem item = new SaveForLaterItem();
-                        item.setEntryId(((ArticleItemBean) getListView().getItemAtPosition(arg2)).getId());
-                        Utils.saveForLater(authCode, user, resources, item);
-                        SharedPreferences settings = activity.getActivity().getSharedPreferences("FeedYa!Settings", 0);
-                        SharedPreferences.Editor editor = settings.edit();
-                        editor.putBoolean("AddedToReadList", true);
-                        editor.commit();
-
-                        return true;
-                    }
-
-                });
             }
 
         }

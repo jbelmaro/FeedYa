@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Html;
@@ -29,6 +30,9 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.analytics.tracking.android.EasyTracker;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.InterstitialAd;
 import com.jbelmaro.feedya.util.ArticleItemBean;
 import com.jbelmaro.feedya.util.Item;
 import com.jbelmaro.feedya.util.SaveForLaterItem;
@@ -48,7 +52,8 @@ public class CategoryActivity extends ListActivity {
     private String continuation;
     private List<Item> listaArticles;
     private String dateFormatted = "";
-
+    private InterstitialAd interstitial;
+    
     public CategoryActivity() {
     }
 
@@ -56,16 +61,26 @@ public class CategoryActivity extends ListActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_news);
+     // Create the interstitial.
+        interstitial = new InterstitialAd(this);
+        interstitial.setAdUnitId("ca-app-pub-9633189420266305/2465547473");
+     // Create ad request.
+        AdRequest adRequest = new AdRequest.Builder().build();
+
+        // Begin loading your interstitial.
+        interstitial.loadAd(adRequest);
+        
         Bundle extras = getIntent().getExtras();
         SharedPreferences settings = getSharedPreferences("FeedYa!Settings", MODE_PRIVATE);
         String authCode = settings.getString("authCode", "0");
         String user = settings.getString("profileId", "0");
-        LoadFeedsTask tarea = new LoadFeedsTask(this, authCode, this.getResources(), extras.getString("categoryId"), user);
+        LoadFeedsTask tarea = new LoadFeedsTask(this, authCode, this.getResources(), extras.getString("categoryId"),
+                user);
         tarea.execute(new String[] {extras.getString("categoryId")});
         titleV = (TextView) findViewById(R.id.title_list_activity_news);
         Log.i("CategoryActivity", "nombre: " + extras.getString("titulo"));
         titulo = extras.getString("titulo").toUpperCase(Locale.getDefault());
-        titleV.setText(Html.fromHtml(extras.getString("titulo").toUpperCase(Locale.getDefault())));
+        titleV.setText(Html.fromHtml(titulo));
 
     }
 
@@ -74,16 +89,22 @@ public class CategoryActivity extends ListActivity {
         Log.i("CategoryActivity", "Item clicked: " + id);
         Intent intent = new Intent(this.getApplicationContext(), ArticleActivity.class);
         intent.putExtra("titulo", listaArticles.get(position).origin.title);
-        intent.putExtra("noticia", listaArticles.get(position).summary.content);
+        if (listaArticles.get(position).content != null)
+            intent.putExtra("noticia", listaArticles.get(position).content.content);
+        else
+            intent.putExtra("noticia", listaArticles.get(position).summary.content);
         intent.putExtra("noticiaURL", listaArticles.get(position).originId);
         intent.putExtra("noticiaTitulo", listaArticles.get(position).title);
         intent.putExtra("noticiaLINK", listaArticles.get(position).originId);
         intent.putExtra("autorNoticia", listaArticles.get(position).author);
         intent.putExtra("fechaNoticia", dateFormatted);
         intent.putExtra("idNoticia", listaArticles.get(position).id);
+        listaArticles.get(position).unread = false;
+        ((TextView) v.findViewById(R.id.article_title)).setTextColor(Color.parseColor("#AAAAAA"));
+        adapter.notifyDataSetChanged();
 
         startActivity(intent);
-        this.overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left);
+        this.overridePendingTransition(R.anim.anim_open, R.anim.anim_out);
     }
 
     @Override
@@ -118,7 +139,7 @@ public class CategoryActivity extends ListActivity {
         private String source;
         private String categoryId;
 
-        public LoadFeedsTask(CategoryActivity a, String authCode, Resources resources,String categoryId, String user) {
+        public LoadFeedsTask(CategoryActivity a, String authCode, Resources resources, String categoryId, String user) {
             activity = a;
             dialog = (ProgressBar) activity.findViewById(R.id.marker_progress);
             this.authCode = authCode;
@@ -135,7 +156,7 @@ public class CategoryActivity extends ListActivity {
                 load = Utils.LoadCategory(authCode, categoryId, resources);
                 source = url;
                 Log.i("CategoryActivity", url);
-                Log.i("CategoryActivity", "tamaño descarga: "+ load.items.size());
+                Log.i("CategoryActivity", "tamaño descarga: " + load.items.size());
             }
 
             listA = new ArrayList<ArticleItemBean>();
@@ -163,12 +184,15 @@ public class CategoryActivity extends ListActivity {
                     if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
 
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                load.items.get(i).visual.getUrl(), dateFormatted, load.items.get(i).id));
+                                load.items.get(i).visual.getUrl(),
+                                load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id, load.items
+                                        .get(i).unread));
                         articleIcon = null;
                     } else {
                         articleIcon = null;
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                "", dateFormatted, load.items.get(i).id));
+                                "", load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id,
+                                load.items.get(i).unread));
                     }
                 }
             }
@@ -179,7 +203,10 @@ public class CategoryActivity extends ListActivity {
         @Override
         protected void onPostExecute(Boolean result) {
             dialog.setVisibility(View.GONE);
+            
             setListAdapter(adapter);
+            displayInterstitial();
+            adapter.notifyDataSetChanged();
             lv = getListView();
             lv.setOnItemLongClickListener(new OnItemLongClickListener() {
 
@@ -195,10 +222,10 @@ public class CategoryActivity extends ListActivity {
                         editor.putBoolean("AddedToReadList", true);
                         editor.commit();
                         Log.v("CategoryActivity", "Añadido a Lista de Lectura");
-                        Toast.makeText(getApplicationContext(), "Añadido a Lista de Lectura", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getApplicationContext(), R.string.added_to_list, Toast.LENGTH_SHORT).show();
 
                     } else {
-                        Toast.makeText(getApplicationContext(), "Se ha producido un error al añadir", Toast.LENGTH_LONG)
+                        Toast.makeText(getApplicationContext(), R.string.added_to_list_error, Toast.LENGTH_SHORT)
                                 .show();
                     }
                     return true;
@@ -209,7 +236,7 @@ public class CategoryActivity extends ListActivity {
 
                 @Override
                 public void onScrollStateChanged(AbsListView view, int scrollState) {
-               
+
                 }
 
                 @Override
@@ -220,7 +247,7 @@ public class CategoryActivity extends ListActivity {
                         endlist = true;
                         LoadMoreFeedsTask tarea = new LoadMoreFeedsTask(activity, authCode, resources);
                         tarea.execute(new String[] {source});
-                        lv.setSelection(getListAdapter().getCount() - 1);
+                        //lv.setSelection(getListAdapter().getCount() - 1);
 
                     }
                 }
@@ -268,7 +295,7 @@ public class CategoryActivity extends ListActivity {
                     long diff = (new Date()).getTime() - date.getTime();
                     // DateFormat formatter = new SimpleDateFormat("HH:mm");
                     // String dateFormatted = formatter.format(date);
-                    
+
                     if ((diff / 1000) < 60)
                         dateFormatted = "hace " + Integer.toString((int) (diff / 1000)) + " seg.";
                     else if ((diff / 60000) < 60)
@@ -278,15 +305,18 @@ public class CategoryActivity extends ListActivity {
                     else
                         dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60 * 24))) + " dias";
                     if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
-                        articleIcon = Utils.downloadArticleImage(load.items.get(i).visual.getUrl());
+                        //articleIcon = Utils.downloadArticleImage(load.items.get(i).visual.getUrl());
 
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                load.items.get(i).visual.getUrl(), dateFormatted, load.items.get(i).id));
+                                load.items.get(i).visual.getUrl(),
+                                load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id, load.items
+                                        .get(i).unread));
                         articleIcon = null;
                     } else {
                         articleIcon = null;
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                "", dateFormatted, load.items.get(i).id));
+                                "", load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id,
+                                load.items.get(i).unread));
                     }
                 }
                 adapter = new ArticleListItemAdapter(activity, listA);
@@ -297,6 +327,7 @@ public class CategoryActivity extends ListActivity {
         @Override
         protected void onPostExecute(Boolean result) {
             setListAdapter(adapter);
+            lv.setSelection(getListAdapter().getCount() - 20);
 
         }
 
@@ -308,6 +339,23 @@ public class CategoryActivity extends ListActivity {
     @Override
     public void onBackPressed() {
         finish();
-        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left);
+        overridePendingTransition(R.anim.anim_close, R.anim.anim_in);
+    }
+ // Invoke displayInterstitial() when you are ready to display an interstitial.
+    public void displayInterstitial() {
+      if (interstitial.isLoaded()) {
+        interstitial.show();
+      }
+    }
+    @Override
+    public void onStart() {
+        super.onStart();
+        EasyTracker.getInstance().activityStart(this);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        EasyTracker.getInstance().activityStop(this);
     }
 }

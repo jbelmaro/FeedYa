@@ -5,7 +5,6 @@ import java.util.List;
 
 import android.app.ListActivity;
 import android.app.SearchManager;
-import android.app.SearchableInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -17,8 +16,10 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Shader.TileMode;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -31,6 +32,7 @@ import android.widget.ProgressBar;
 import android.widget.SearchView;
 import android.widget.TextView;
 
+import com.google.analytics.tracking.android.EasyTracker;
 import com.jbelmaro.feedya.util.FeedItemBean;
 import com.jbelmaro.feedya.util.SearchFeedsResponse;
 import com.jbelmaro.feedya.util.Utils;
@@ -39,6 +41,7 @@ public class SearchActivity extends ListActivity implements SearchView.OnQueryTe
 
     private SearchView mSearchView;
     private TextView mStatusView;
+    private TextView mNoResultsView;
     private ArrayAdapter<FeedItemBean> adapter;
     private List<FeedItemBean> listA;
     private SearchFeedsResponse load;
@@ -57,10 +60,12 @@ public class SearchActivity extends ListActivity implements SearchView.OnQueryTe
         setContentView(R.layout.activity_search);
 
         mStatusView = (TextView) findViewById(R.id.status_text);
+        mNoResultsView = (TextView) findViewById(R.id.no_results_text_view);
+
         String busqueda = extras.getString("busqueda");
         authCode = extras.getString("authCode");
         busqueda = busqueda.replace(" ", "%20");
-        mStatusView.setText(busqueda);
+        mStatusView.setText(Uri.decode(busqueda));
         SharedPreferences settings = getSharedPreferences("FeedYa!Settings", MODE_PRIVATE);
         authCode = settings.getString("authCode", "0");
         Asincrono tarea = new Asincrono(this, authCode, this.getResources());
@@ -76,7 +81,7 @@ public class SearchActivity extends ListActivity implements SearchView.OnQueryTe
         MenuItem item = menu.findItem(R.id.share);
         item.setVisible(false);
         MenuItem searchItem = menu.findItem(R.id.search);
-        searchItem.setVisible(false);
+        searchItem.setVisible(true);
         mSearchView = (SearchView) searchItem.getActionView();
         setupSearchView(searchItem);
 
@@ -103,32 +108,25 @@ public class SearchActivity extends ListActivity implements SearchView.OnQueryTe
             searchItem.setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_IF_ROOM
                     | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
         }
-
+        mSearchView.setInputType(InputType.TYPE_TEXT_VARIATION_URI);
         SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-        if (searchManager != null) {
-            List<SearchableInfo> searchables = searchManager.getSearchablesInGlobalSearch();
-
-            SearchableInfo info = searchManager.getSearchableInfo(getComponentName());
-            for (SearchableInfo inf : searchables) {
-                if (inf.getSuggestAuthority() != null && inf.getSuggestAuthority().startsWith("applications")) {
-                    info = inf;
-                }
-            }
-            mSearchView.setSearchableInfo(info);
-        }
+        mSearchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
 
         mSearchView.setOnQueryTextListener(this);
     }
 
     @Override
     public boolean onQueryTextChange(String newText) {
-        mStatusView.setText("Query = " + newText);
+        mStatusView.setText(newText);
         return false;
     }
 
     @Override
     public boolean onQueryTextSubmit(String query) {
-        mStatusView.setText("Query = " + query + " : submitted");
+        Log.i("ActionBar", "Nuevo!");
+        Asincrono tarea = new Asincrono(this, authCode, this.getResources());
+        tarea.execute(new String[] {query});
+
         return false;
     }
 
@@ -180,17 +178,16 @@ public class SearchActivity extends ListActivity implements SearchView.OnQueryTe
         protected Boolean doInBackground(String... params) {
 
             for (String url : params) {
-                load = Utils.FindFeeds(url, authCode, resources);
+                load = Utils.FindFeeds(Uri.encode(url), authCode, resources);
                 Log.i("SearchActivity", url);
             }
 
-            listA = new ArrayList<FeedItemBean>();
             Bitmap feedIcon = null;
             Drawable favorite = null;
 
             try {
                 for (int i = 0; i < load.results.length; i++) {
-                    feedIcon = Utils.downloadBitmap(load.results[i].website);
+                    feedIcon = Utils.downloadBitmap(load.results[i].website, false);
                     Bitmap circleBitmap = Bitmap.createBitmap(feedIcon.getWidth(), feedIcon.getHeight(),
                             Bitmap.Config.ARGB_8888);
 
@@ -203,7 +200,7 @@ public class SearchActivity extends ListActivity implements SearchView.OnQueryTe
                     canvas.drawCircle(feedIcon.getWidth() / 2, feedIcon.getHeight() / 2,
                             (float) (feedIcon.getWidth() / 2 - 0.1), paint);
                     listA.add(new FeedItemBean(load.results[i].title, circleBitmap, favorite, load.results[i].feedId,
-                            load.results[i].website, null));
+                            load.results[i].website, null, 0));
                 }
             } catch (NullPointerException e) {
                 Log.e("SearchActivity", "hay un error porque devuelve la lista vacía");
@@ -216,14 +213,29 @@ public class SearchActivity extends ListActivity implements SearchView.OnQueryTe
         protected void onPostExecute(Boolean result) {
 
             dialog.setVisibility(View.GONE);
-
+            if (listA.isEmpty())
+                mNoResultsView.setVisibility(View.VISIBLE);
             setListAdapter(adapter);
         }
 
         @Override
         protected void onPreExecute() {
+
+            listA = new ArrayList<FeedItemBean>();
+            adapter = new FeedListItemAdapter(activity, listA);
             dialog.setVisibility(View.VISIBLE);
         }
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        EasyTracker.getInstance().activityStart(this);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        EasyTracker.getInstance().activityStop(this);
+    }
 }

@@ -5,69 +5,78 @@ import android.graphics.drawable.Drawable;
 
 public class FeedItemBean {
 
-	private String title;
-	private Bitmap icon;
-	private Drawable favorite;
-	private Drawable settings;
-	private String feedURL;
-	private String imageURL;
-	
-	public FeedItemBean(String t, Bitmap i, Drawable f, String feedURL, String imageURL, Drawable s) {
-		// TODO Auto-generated constructor stub
-		title = t;
-		icon = i;
-		favorite = f;
-		this.feedURL=feedURL;
-		this.imageURL=imageURL;
-		settings = s;
-	}
+    private String title;
+    private Bitmap icon;
+    private Drawable favorite;
+    private Drawable settings;
+    private String feedURL;
+    private String imageURL;
+    private int count;
 
-	public String getTitle() {
-		return title;
-	}
+    public FeedItemBean(String t, Bitmap i, Drawable f, String feedURL, String imageURL, Drawable s, int count) {
+        title = t;
+        icon = i;
+        favorite = f;
+        this.feedURL = feedURL;
+        this.imageURL = imageURL;
+        settings = s;
+        this.setCount(count);
+    }
 
-	public void setTitle(String title) {
-		this.title = title;
-	}
+    public String getTitle() {
+        return title;
+    }
 
-	public Bitmap getIcon() {
-		return icon;
-	}
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-	public void setIcon(Bitmap icon) {
-		this.icon = icon;
-	}
+    public Bitmap getIcon() {
+        return icon;
+    }
 
-	public Drawable getFavorite() {
-		return favorite;
-	}
+    public void setIcon(Bitmap icon) {
+        this.icon = icon;
+    }
 
-	public void setFavorite(Drawable favorite) {
-		this.favorite = favorite;
-	}
+    public Drawable getFavorite() {
+        return favorite;
+    }
 
-	public String getFeedURL() {
-		return feedURL;
-	}
+    public void setFavorite(Drawable favorite) {
+        this.favorite = favorite;
+    }
 
-	public void setFeedURL(String feedURL) {
-		this.feedURL = feedURL;
-	}
+    public String getFeedURL() {
+        return feedURL;
+    }
 
-	public String getImageURL() {
-		return imageURL;
-	}
+    public void setFeedURL(String feedURL) {
+        this.feedURL = feedURL;
+    }
 
-	public void setImageURL(String imageURL) {
-		this.imageURL = imageURL;
-	}
+    public String getImageURL() {
+        return imageURL;
+    }
 
-	public Drawable getSettings() {
-		return settings;
-	}
+    public void setImageURL(String imageURL) {
+        this.imageURL = imageURL;
+    }
 
-	public void setSettings(Drawable settings) {
-		this.settings = settings;
-	}
+    public Drawable getSettings() {
+        return settings;
+    }
+
+    public void setSettings(Drawable settings) {
+        this.settings = settings;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public void setCount(int count2) {
+        this.count = count2;
+    }
 
 }

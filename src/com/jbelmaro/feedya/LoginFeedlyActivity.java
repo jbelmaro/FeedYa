@@ -2,10 +2,6 @@ package com.jbelmaro.feedya;
 
 import java.util.regex.Pattern;
 
-import com.jbelmaro.feedya.util.ExchangeCodeResponse;
-import com.jbelmaro.feedya.util.Profile;
-import com.jbelmaro.feedya.util.Utils;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -15,10 +11,16 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+
+import com.jbelmaro.feedya.util.ExchangeCodeResponse;
+import com.jbelmaro.feedya.util.Profile;
+import com.jbelmaro.feedya.util.Utils;
 
 public class LoginFeedlyActivity extends Activity {
 
@@ -30,10 +32,13 @@ public class LoginFeedlyActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login_feedly);
+
         webView = (WebView) findViewById(R.id.viewFeedly);
         webView.getSettings().setJavaScriptEnabled(true);
 
-        webView.getSettings().setAllowFileAccess(true);
+        webView.getSettings().setAllowFileAccess(false);
+        webView.getSettings().setAppCacheEnabled(false);
+
         ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
@@ -62,14 +67,13 @@ public class LoginFeedlyActivity extends Activity {
                             Profile profile = Utils.getProfile(settings.getString("authCode", "0"), getResources());
                             if (profile != null) {
                                 Log.v("MainActivity", "Profile: " + profile.getFullName());
-
                                 editor.putString("profileName", profile.getFullName());
                                 editor.putString("profileId", profile.getId());
                                 editor.commit();
-
                                 Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-
                                 startActivity(intent);
+                                overridePendingTransition(R.anim.anim_open, R.anim.anim_out);
+
                                 view.destroy();
                                 return true;
                             } else {
@@ -85,14 +89,14 @@ public class LoginFeedlyActivity extends Activity {
                     return false;
                 }
             });
-            webView.loadUrl("http://sandbox.feedly.com/v3/auth/auth?response_type=code&redirect_uri=http://localhost&client_id=sandbox&scope=https://cloud.feedly.com/subscriptions");
+            webView.loadUrl("http://feedly.com/v3/auth/auth?response_type=code&redirect_uri=http://localhost&client_id=feedya&scope=https://cloud.feedly.com/subscriptions");
 
         } else {
 
-            Toast.makeText(this, "No hay conexión disponible en este momento", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.no_connection, Toast.LENGTH_LONG).show();
             Intent intent = new Intent(getApplicationContext(), MainActivity.class);
             startActivity(intent);
-            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left);
+            overridePendingTransition(R.anim.anim_open, R.anim.anim_out);
         }
 
     }
@@ -101,12 +105,25 @@ public class LoginFeedlyActivity extends Activity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.login_feedly, menu);
+        MenuItem item = menu.findItem(R.id.action_settings);
+        item.setVisible(false);
         return true;
     }
 
     @Override
-    public void onBackPressed() {
-
-        finish();
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if ((keyCode == KeyEvent.KEYCODE_BACK) && webView.canGoBack()) {
+            webView.goBack();
+            return true;
+        } else {
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_HOME);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish();
+            overridePendingTransition(R.anim.anim_close, R.anim.anim_in);
+        }
+        return super.onKeyDown(keyCode, event);
     }
+
 }

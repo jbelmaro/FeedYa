@@ -2,6 +2,7 @@ package com.jbelmaro.feedya;
 
 import java.util.Locale;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -9,9 +10,11 @@ import android.support.v4.app.FragmentPagerAdapter;
 
 public class SectionPagerAdapter extends FragmentPagerAdapter {
     public static final String ARG_SECTION_NUMBER = "section_number";
+    Context context;
 
-    public SectionPagerAdapter(FragmentManager fm) {
+    public SectionPagerAdapter(FragmentManager fm, Context c) {
         super(fm);
+        context = c;
     }
 
     @Override
@@ -53,11 +56,11 @@ public class SectionPagerAdapter extends FragmentPagerAdapter {
         Locale l = Locale.getDefault();
         switch (position) {
         case 1:
-            return "favoritos".toUpperCase(l);
+            return context.getResources().getString(R.string.favorites_title).toUpperCase(l);
         case 2:
-            return "ultima hora".toUpperCase(l);
+            return context.getResources().getString(R.string.lastnews_title).toUpperCase(l);
         case 0:
-            return "lista de lectura".toUpperCase(l);
+            return context.getResources().getString(R.string.save_later_title).toUpperCase(l);
         default:
             return null;
         }

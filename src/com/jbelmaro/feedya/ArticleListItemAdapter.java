@@ -3,13 +3,12 @@ package com.jbelmaro.feedya;
 import java.util.List;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -21,7 +20,6 @@ public class ArticleListItemAdapter extends ArrayAdapter<ArticleItemBean> {
 
     private final List<ArticleItemBean> list;
     private final Activity context;
-    private int lastPosition = -1;
 
     public ArticleListItemAdapter(Activity context, List<ArticleItemBean> list) {
         super(context, R.layout.article_row, list);
@@ -50,6 +48,8 @@ public class ArticleListItemAdapter extends ArrayAdapter<ArticleItemBean> {
 
                 final ViewHolder holder = (ViewHolder) view.getTag();
                 holder.text.setText(Html.fromHtml(list.get(position).getTitle()));
+                if(!list.get(position).isUnread())
+                    holder.text.setTextColor(Color.parseColor("#AAAAAA"));
                 Picasso.with(context).setDebugging(true);
                 Picasso.with(context).load(list.get(position).getIconURL()).resize(300, 300).centerCrop().into(holder.icon);
                 holder.time.setText(Html.fromHtml(list.get(position).getTime()));
@@ -65,16 +65,14 @@ public class ArticleListItemAdapter extends ArrayAdapter<ArticleItemBean> {
 
                 final ViewHolder holder = (ViewHolder) view.getTag();
                 holder.text.setText(Html.fromHtml(list.get(position).getTitle()));
+                if(!list.get(position).isUnread())
+                    holder.text.setTextColor(Color.parseColor("#AAAAAA"));
                 holder.time.setText(Html.fromHtml(list.get(position).getTime()));
 
             }
-            Animation animation = AnimationUtils.loadAnimation(getContext(),
-                    (position > lastPosition) ? R.anim.up_from_bottom : R.anim.down_from_top);
-            view.startAnimation(animation);
-
-            lastPosition = position;
+            
         } catch (NullPointerException e) {
-            Log.e("ArticleListItemAdapter", "la lista esta a null");
+            Log.e("ArticleListItemAdapter", "La lista esta a null");
         }
 
         return view;

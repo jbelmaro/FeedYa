@@ -14,6 +14,7 @@ import android.util.Log;
 import android.view.Window;
 
 import com.crashlytics.android.Crashlytics;
+import com.google.analytics.tracking.android.EasyTracker;
 import com.jbelmaro.feedya.util.ExchangeCodeResponse;
 import com.jbelmaro.feedya.util.Profile;
 import com.jbelmaro.feedya.util.Utils;
@@ -64,18 +65,7 @@ public class SplashScreenActivity extends Activity {
                                     Log.v("SplashScreenActivity",
                                             "refresh token: " + settings.getString("authCodeRefresh", "0"));
                                     exchangeCodeResponse = Utils.getAuthTokenWithRefreshToken(
-                                            settings.getString("authCodeRefresh", "0"), getResources(), "refresh_token");// revoke_token
-                                    // y
-                                    // deberia
-                                    // mandar
-                                    // a
-                                    // LoginFeedlyActivity
-                                    // y
-                                    // borrar
-                                    // valores
-                                    // de
-                                    // shared
-                                    // preferences
+                                            settings.getString("authCodeRefresh", "0"), getResources(), "refresh_token");
                                     if (exchangeCodeResponse != null) {
                                         Log.v("SplashScreenActivity", "errorId: " + exchangeCodeResponse.errorId);
                                         Log.v("SplashScreenActivity", "errorMessage: "
@@ -99,10 +89,10 @@ public class SplashScreenActivity extends Activity {
                         Intent mainIntent = new Intent().setClass(SplashScreenActivity.this, MainActivity.class);
                         startActivity(mainIntent);
                         overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left);
-
                     }
                 } else {
                     Intent loginIntent = new Intent().setClass(getApplicationContext(), LoginFeedlyActivity.class);
+                    
                     startActivity(loginIntent);
                     overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left);
 
@@ -118,5 +108,25 @@ public class SplashScreenActivity extends Activity {
         Timer timer = new Timer();
         timer.schedule(task, SPLASH_SCREEN_DELAY);
     }
+    @Override
+    public void onBackPressed() {
+        moveTaskToBack(true);
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_HOME);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        finish();
+        overridePendingTransition(R.anim.anim_close, R.anim.anim_in);
+    }
+    @Override
+    public void onStart() {
+        super.onStart();
+        EasyTracker.getInstance().activityStart(this);
+    }
 
+    @Override
+    public void onStop() {
+        super.onStop();
+        EasyTracker.getInstance().activityStop(this);
+    }
 }
