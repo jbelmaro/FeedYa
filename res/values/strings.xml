@@ -1,0 +1,50 @@
+<resources>
+
+    <string name="app_name">FeedYa!</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_add">Add new feed</string>
+    <string name="action_search">Search</string>
+    <string name="news_name">Article</string>
+    <string name="add_name">Add Feed</string>
+    <string name="title_activity_splash_screen">SplashScreenActivity</string>
+    <string name="article_name">ArtcicleActivity</string>
+    <string name="search_name">SearchActivity</string>
+    <string name="title_search">Find</string>
+    <string name="feed_image">feed image</string>
+    <string name="button_favorite">Button Favorite</string>
+    <string name="Compartir"></string>
+    <string name="action_share">Share</string>
+    <string name="title_activity_login_feedly">LoginFeedlyActivity</string>
+    <string name="save">Save in ReadList</string>
+    <string name="action_save">Save in ReadList</string>
+    <string name="action_open">Open in Browser</string>
+    <string name="title_activity_category">CategoryActivity</string>
+    <string name="version">Versión 1.0.0</string>
+    <string name="dev_name">JBELMARO © 2014</string>
+    <string name="attributions_details">"Application developed using Feedly API and Picasso Square Open Source."</string>
+    <string name="title_settings">Settings</string>
+    <string name="settings_share_application">Share</string>
+    <string name="settings_vote_application">Vote</string>
+    <string name="settings_contact_with_developer">Contact</string>
+    <string name="settings_about">About us</string>
+    <string name="share_text">I share it with FeedYa! </string>
+    <string name="added_to_list">Added to ReadList</string>
+    <string name="added_to_list_error">Problem adding</string>
+    <string name="subs_del">Subscription deleted</string>
+    <string name="subs_del_error">Problem deleting</string>
+    <string name="no_connection">No connection in this moment</string>
+    <string name="no_results">No Results</string>
+    <string name="settings_logout">Log out</string>
+    <string name="settings">Settings</string>
+    <string name="no_favorites">Find and subscribe your favorites feeds</string>
+    <string name="favorites_title">favorites</string>
+    <string name="save_later_title">readlist</string>
+    <string name="lastnews_title">last news</string>
+    <string name="showcase_title">"Wellcome"</string>
+    <string name="showcase_msg">"Press to find your favorite feeds, blogs and news"</string>
+    <string name="showcase_pager">"Navigate between your ReadList, Favorites and Last News"</string>
+    <string name="showcase_push">"Long press over an article and it will save it into ReadList"</string>
+    <string name="share_app">"FeedYa!. Your app to be up to the news. http://goo.gl/drnDpF"</string>
+
+</resources>
