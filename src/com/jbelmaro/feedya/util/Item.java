@@ -2,6 +2,9 @@ package com.jbelmaro.feedya.util;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Item {
 
     public String id;

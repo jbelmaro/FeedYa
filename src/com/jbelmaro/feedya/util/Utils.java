@@ -166,12 +166,14 @@ public class Utils {
             connection.setRequestMethod("GET");
             connection.setDoInput(true);
             connection.setRequestProperty("Authorization", authCode);
-            reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            ObjectMapper mapper = new ObjectMapper();
-            while ((line = reader.readLine()) != null) {
-                builder.append(line);
+            if (connection != null) {
+                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                ObjectMapper mapper = new ObjectMapper();
+                while ((line = reader.readLine()) != null) {
+                    builder.append(line);
+                }
+                counts = mapper.readValue(builder.toString(), Counts.class);
             }
-            counts = mapper.readValue(builder.toString(), Counts.class);
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -183,7 +185,8 @@ public class Utils {
             e.printStackTrace();
         } finally {
             try {
-                reader.close();
+                if (reader != null)
+                    reader.close();
             } catch (IOException e) {
                 //
                 e.printStackTrace();
@@ -231,6 +234,7 @@ public class Utils {
             connection.setRequestMethod("GET");
             connection.setDoInput(true);
             connection.setRequestProperty("Authorization", authCode);
+
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
@@ -297,6 +301,7 @@ public class Utils {
             connection.setRequestMethod("GET");
             connection.setDoInput(true);
             connection.setRequestProperty("Authorization", authCode);
+
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
@@ -313,7 +318,8 @@ public class Utils {
             e.printStackTrace();
         } finally {
             try {
-                reader.close();
+                if (reader != null)
+                    reader.close();
             } catch (IOException e) {
                 //
                 e.printStackTrace();
@@ -363,6 +369,7 @@ public class Utils {
             connection.setRequestMethod("GET");
             connection.setDoInput(true);
             connection.setRequestProperty("Authorization", authCode);
+
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
@@ -379,7 +386,8 @@ public class Utils {
             e.printStackTrace();
         } finally {
             try {
-                reader.close();
+                if (reader != null)
+                    reader.close();
             } catch (IOException e) {
                 //
                 e.printStackTrace();
@@ -431,6 +439,7 @@ public class Utils {
             connection.setRequestMethod("GET");
             connection.setDoInput(true);
             connection.setRequestProperty("Authorization", authCode);
+
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
@@ -447,7 +456,8 @@ public class Utils {
             e.printStackTrace();
         } finally {
             try {
-                reader.close();
+                if (reader != null)
+                    reader.close();
             } catch (IOException e) {
                 //
                 e.printStackTrace();
@@ -498,6 +508,7 @@ public class Utils {
             connection.setRequestMethod("GET");
             connection.setDoInput(true);
             connection.setRequestProperty("Authorization", authCode);
+
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
@@ -514,7 +525,8 @@ public class Utils {
             e.printStackTrace();
         } finally {
             try {
-                reader.close();
+                if (reader != null)
+                    reader.close();
             } catch (IOException e) {
                 //
                 e.printStackTrace();
@@ -564,6 +576,7 @@ public class Utils {
             connection.setRequestMethod("GET");
             connection.setDoInput(true);
             connection.setRequestProperty("Authorization", authCode);
+
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
@@ -580,7 +593,8 @@ public class Utils {
             e.printStackTrace();
         } finally {
             try {
-                reader.close();
+                if (reader != null)
+                    reader.close();
             } catch (IOException e) {
                 //
                 e.printStackTrace();
@@ -628,6 +642,7 @@ public class Utils {
             connection.setRequestMethod("GET");
             connection.setDoInput(true);
             connection.setRequestProperty("Authorization", authCode);
+
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             builder = new StringBuilder();
             while ((line = reader.readLine()) != null) {
@@ -648,7 +663,8 @@ public class Utils {
             e.printStackTrace();
         } finally {
             try {
-                reader.close();
+                if (reader != null)
+                    reader.close();
             } catch (IOException e) {
                 //
                 e.printStackTrace();
@@ -665,11 +681,14 @@ public class Utils {
             URL urldir;
             // URL urldir = new
             // URL("http://s2.googleusercontent.com/s2/favicons?domain=" + url);
-            Log.v("downloadBitmap", url);
-            if (visual)
+            if (visual){
                 urldir = new URL(url);
-            else
+                Log.v("downloadBitmap", "SI "+url);
+            }
+            else{
                 urldir = new URL("http://s2.googleusercontent.com/s2/favicons?domain=" + url);
+                Log.v("downloadBitmap", "NO "+url);
+            }
             URLConnection connection = urldir.openConnection();
             connection.setUseCaches(true);
 
@@ -930,6 +949,7 @@ public class Utils {
             connection.setRequestMethod("GET");
             connection.setDoInput(true);
             connection.setRequestProperty("Authorization", authCode);
+
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
@@ -964,7 +984,8 @@ public class Utils {
             e.printStackTrace();
         } finally {
             try {
-                reader.close();
+                if (reader != null)
+                    reader.close();
 
             } catch (IOException e) {
                 //
@@ -1014,6 +1035,7 @@ public class Utils {
             connection.setRequestMethod("GET");
             connection.setDoInput(true);
             connection.setRequestProperty("Authorization", authCode);
+
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
@@ -1049,7 +1071,8 @@ public class Utils {
             e.printStackTrace();
         } finally {
             try {
-                reader.close();
+                if (reader != null)
+                    reader.close();
             } catch (IOException e) {
                 //
                 e.printStackTrace();
@@ -1098,6 +1121,7 @@ public class Utils {
             connection.setRequestMethod("GET");
             connection.setDoInput(true);
             connection.setRequestProperty("Authorization", authCode);
+
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
@@ -1133,7 +1157,8 @@ public class Utils {
             e.printStackTrace();
         } finally {
             try {
-                reader.close();
+                if (reader != null)
+                    reader.close();
             } catch (IOException e) {
                 //
                 e.printStackTrace();
@@ -1141,6 +1166,93 @@ public class Utils {
         }
 
         return subscriptions;
+
+    }
+
+    public static ShortenURL getShortenUrl(String authCode, Resources resources, String feedId) {
+        URL url = null;
+        HttpURLConnection connection = null;
+        String line;
+        StringBuilder builder = new StringBuilder();
+        BufferedReader reader = null;
+        ShortenURL shorten = null;
+
+        Properties props = new Properties();
+        InputStream rawResource = null;
+        try {
+            rawResource = resources.openRawResource(R.raw.feedya);
+
+            props.load(rawResource);
+            System.out.println("The properties are now loaded");
+            System.out.println("properties: " + props);
+        } catch (NotFoundException e) {
+            System.err.println("Did not find raw resource: " + e);
+        } catch (IOException e) {
+            System.err.println("Failed to open microlog property file");
+        } finally {
+            try {
+                rawResource.close();
+            } catch (IOException e) {
+                //
+                e.printStackTrace();
+            }
+        }
+        String shortenURL = props.getProperty("shortenPath");
+        try {
+            url = new URL(shortenURL + "/" + URLEncoder.encode(feedId, "UTF-8"));
+            Log.v("SHORTEN", url.toString());
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setReadTimeout(10000 /* milliseconds */);
+            connection.setConnectTimeout(15000 /* milliseconds */);
+            connection.setRequestMethod("GET");
+            connection.setDoInput(true);
+            connection.setRequestProperty("Authorization", authCode);
+
+            if (connection.getInputStream() != null) {
+                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                while ((line = reader.readLine()) != null) {
+                    builder.append(line);
+                }
+                ObjectMapper mapper = new ObjectMapper();
+                try {
+                    shorten = mapper.readValue(builder.toString(), ShortenURL.class);
+                } catch (JsonGenerationException e) {
+
+                    e.printStackTrace();
+
+                } catch (JsonMappingException e) {
+
+                    e.printStackTrace();
+
+                } catch (IOException e) {
+
+                    e.printStackTrace();
+
+                }
+            }
+        } catch (MalformedURLException e) {
+            //
+            e.printStackTrace();
+        } catch (IOException e) {
+            //
+            e.printStackTrace();
+        } catch (NetworkOnMainThreadException e) {
+            //
+            e.printStackTrace();
+        } catch (Exception e) {
+            //
+            e.printStackTrace();
+        } finally {
+            try {
+                if (reader != null)
+                    reader.close();
+            } catch (IOException e) {
+                //
+                e.printStackTrace();
+            }
+        }
+
+        return shorten;
 
     }
 

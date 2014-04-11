@@ -1,7 +1,9 @@
 package com.jbelmaro.feedya.util;
 
-public class Content
-{
-  public String direction;
-  public String content;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class Content {
+    public String direction;
+    public String content;
 }

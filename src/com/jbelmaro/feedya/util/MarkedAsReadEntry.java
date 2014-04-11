@@ -3,6 +3,9 @@ package com.jbelmaro.feedya.util;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MarkedAsReadEntry {
     private String type;
     private String action;

@@ -20,6 +20,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
@@ -53,7 +54,7 @@ public class CategoryActivity extends ListActivity {
     private List<Item> listaArticles;
     private String dateFormatted = "";
     private InterstitialAd interstitial;
-    
+
     public CategoryActivity() {
     }
 
@@ -61,15 +62,15 @@ public class CategoryActivity extends ListActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_news);
-     // Create the interstitial.
+        // Create the interstitial.
         interstitial = new InterstitialAd(this);
         interstitial.setAdUnitId("ca-app-pub-9633189420266305/2465547473");
-     // Create ad request.
+        // Create ad request.
         AdRequest adRequest = new AdRequest.Builder().build();
 
         // Begin loading your interstitial.
         interstitial.loadAd(adRequest);
-        
+
         Bundle extras = getIntent().getExtras();
         SharedPreferences settings = getSharedPreferences("FeedYa!Settings", MODE_PRIVATE);
         String authCode = settings.getString("authCode", "0");
@@ -203,7 +204,7 @@ public class CategoryActivity extends ListActivity {
         @Override
         protected void onPostExecute(Boolean result) {
             dialog.setVisibility(View.GONE);
-            
+
             setListAdapter(adapter);
             displayInterstitial();
             adapter.notifyDataSetChanged();
@@ -247,7 +248,7 @@ public class CategoryActivity extends ListActivity {
                         endlist = true;
                         LoadMoreFeedsTask tarea = new LoadMoreFeedsTask(activity, authCode, resources);
                         tarea.execute(new String[] {source});
-                        //lv.setSelection(getListAdapter().getCount() - 1);
+                        // lv.setSelection(getListAdapter().getCount() - 1);
 
                     }
                 }
@@ -266,6 +267,7 @@ public class CategoryActivity extends ListActivity {
         private CategoryActivity activity;
         private String authCode;
         private Resources resources;
+        final int positionToSave = lv.getFirstVisiblePosition();
 
         public LoadMoreFeedsTask(CategoryActivity a, String authCode, Resources resources) {
             activity = a;
@@ -305,7 +307,6 @@ public class CategoryActivity extends ListActivity {
                     else
                         dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60 * 24))) + " dias";
                     if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
-                        //articleIcon = Utils.downloadArticleImage(load.items.get(i).visual.getUrl());
 
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
                                 load.items.get(i).visual.getUrl(),
@@ -327,8 +328,26 @@ public class CategoryActivity extends ListActivity {
         @Override
         protected void onPostExecute(Boolean result) {
             setListAdapter(adapter);
-            lv.setSelection(getListAdapter().getCount() - 20);
+            lv.post(new Runnable() {
 
+                @Override
+                public void run() {
+                    lv.setSelection(positionToSave);
+                }
+            });
+
+            lv.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener() {
+
+                @Override
+                public boolean onPreDraw() {
+                    if (lv.getFirstVisiblePosition() == positionToSave) {
+                        lv.getViewTreeObserver().removeOnPreDrawListener(this);
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            });
         }
 
         @Override
@@ -338,15 +357,19 @@ public class CategoryActivity extends ListActivity {
 
     @Override
     public void onBackPressed() {
+        super.onBackPressed();
         finish();
         overridePendingTransition(R.anim.anim_close, R.anim.anim_in);
     }
- // Invoke displayInterstitial() when you are ready to display an interstitial.
+
+    // Invoke displayInterstitial() when you are ready to display an
+    // interstitial.
     public void displayInterstitial() {
-      if (interstitial.isLoaded()) {
-        interstitial.show();
-      }
+        if (interstitial.isLoaded()) {
+            interstitial.show();
+        }
     }
+
     @Override
     public void onStart() {
         super.onStart();

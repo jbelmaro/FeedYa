@@ -20,6 +20,8 @@ import com.espian.showcaseview.ShowcaseView;
 import com.espian.showcaseview.ShowcaseViews;
 import com.espian.showcaseview.ShowcaseViews.ItemViewProperties;
 import com.google.analytics.tracking.android.EasyTracker;
+import com.google.analytics.tracking.android.GoogleAnalytics;
+import com.google.analytics.tracking.android.Tracker;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 
@@ -42,6 +44,9 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
 
         setContentView(R.layout.activity_main);
         // Showcase
+        Tracker tracker = GoogleAnalytics.getInstance(this).getTracker("UA-49378682-1");
+
+        tracker.sendView("/MainActivity");
 
         adView = (AdView) findViewById(R.id.adView);
 
@@ -77,11 +82,9 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
                 public void onShowCaseAcknowledged(ShowcaseView showcaseView) {
                 }
             });
+
             co.showcaseId = 1234;
-
-            ShowcaseView.ConfigOptions configOptions = new ShowcaseView.ConfigOptions();
-
-            configOptions.block = true;
+            co.block = true;
             mViews.addView(new ItemViewProperties(R.id.search, R.string.showcase_title, R.string.showcase_msg,
                     ShowcaseView.ITEM_ACTION_ITEM, SHOWCASE_OVERFLOW_ITEM_SCALE, co));
             mViews.addView(new ShowcaseViews.ItemViewProperties(R.id.pager, R.string.showcase_title,
@@ -90,7 +93,9 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
                     R.string.showcase_pager, SHOWCASE_LIKE_SCALE, co));
             mViews.addAnimatedGestureToView(1, -500, 0, 500, 0);
             mViews.addAnimatedGestureToView(2, 500, 0, -500, 0);
-
+            mViews.addView(new ShowcaseViews.ItemViewProperties(R.id.pager, R.string.showcase_title,
+                    R.string.showcase_push, SHOWCASE_LIKE_SCALE, co));
+            mViews.addAnimatedGestureToView(3, 0, 0, 0, 0);
             mViews.show();
             SharedPreferences.Editor editor = settings.edit();
 
@@ -127,6 +132,7 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
         mSearchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
 
         mSearchView.setOnQueryTextListener(this);
+
     }
 
     @Override
@@ -144,7 +150,6 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
         intent.putExtra("authCode", settings.getString("authCode", "0"));
         startActivity(intent);
         overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left);
-        finish();
         return false;
     }
 

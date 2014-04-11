@@ -30,7 +30,7 @@ public class SettingsActivity extends PreferenceActivity {
                 Intent shareIntent = new Intent();
                 shareIntent.setAction(Intent.ACTION_SEND);
                 shareIntent.putExtra(Intent.EXTRA_TEXT,
-                        "FeedYa!. Tu aplicación para estar siempre informado. http://goo.gl/drnDpF");
+                        getResources().getString(R.string.share_app));
                 shareIntent.setType("text/plain");
                 startActivity(shareIntent);
                 return false;

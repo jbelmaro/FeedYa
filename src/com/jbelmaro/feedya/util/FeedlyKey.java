@@ -1,6 +1,8 @@
 package com.jbelmaro.feedya.util;
 
-public interface FeedlyKey
-{
-  public static final String CLIENT_SECRET = "YOURKEYHERE";
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public interface FeedlyKey {
+    public static final String CLIENT_SECRET = "YOURKEYHERE";
 }

@@ -1,5 +1,6 @@
 package com.jbelmaro.feedya;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -158,6 +159,8 @@ public class SearchActivity extends ListActivity implements SearchView.OnQueryTe
     public void onBackPressed() {
         finish();
         overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_left);
+        super.onBackPressed();
+
     }
 
     private class Asincrono extends AsyncTask<String, Integer, Boolean> {
@@ -184,11 +187,17 @@ public class SearchActivity extends ListActivity implements SearchView.OnQueryTe
 
             Bitmap feedIcon = null;
             Drawable favorite = null;
-
+            Bitmap circleBitmap = null;
             try {
                 for (int i = 0; i < load.results.length; i++) {
-                    feedIcon = Utils.downloadBitmap(load.results[i].website, false);
-                    Bitmap circleBitmap = Bitmap.createBitmap(feedIcon.getWidth(), feedIcon.getHeight(),
+                   try {
+                        feedIcon = Utils.downloadBitmap(load.results[i].visualUrl, true);
+
+                    } catch (NullPointerException ex) {
+                        feedIcon = Utils.downloadBitmap(load.results[i].website, false);
+                    }
+                    //feedIcon = Utils.downloadBitmap(load.results[i].website, false);
+                    circleBitmap = Bitmap.createBitmap(feedIcon.getWidth(), feedIcon.getHeight(),
                             Bitmap.Config.ARGB_8888);
 
                     BitmapShader shader = new BitmapShader(feedIcon, TileMode.CLAMP, TileMode.CLAMP);

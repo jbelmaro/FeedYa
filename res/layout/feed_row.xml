@@ -15,7 +15,7 @@
         android:adjustViewBounds="true"
         android:contentDescription="@string/feed_image"
         android:paddingLeft="10dp"
-        android:scaleType="fitXY"
+        android:scaleType="fitCenter"
         android:src="@android:drawable/ic_dialog_alert" />
 
     <TextView
@@ -26,7 +26,7 @@
         android:layout_toLeftOf="@+id/buttonFav"
         android:layout_toRightOf="@+id/feed_icon"
         android:fontFamily="sans-serif"
-        android:gravity="center_vertical"
+        android:gravity="left"
         android:paddingLeft="10dp"
         android:textColor="@color/home_button_normal"
         android:textSize="16sp"

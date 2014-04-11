@@ -20,6 +20,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
@@ -204,8 +205,7 @@ public class NewsActivity extends ListActivity {
                         Toast.makeText(getApplicationContext(), R.string.added_to_list, Toast.LENGTH_LONG).show();
 
                     } else {
-                        Toast.makeText(getApplicationContext(), R.string.added_to_list_error, Toast.LENGTH_LONG)
-                                .show();
+                        Toast.makeText(getApplicationContext(), R.string.added_to_list_error, Toast.LENGTH_LONG).show();
                     }
                     return true;
                 }
@@ -245,6 +245,7 @@ public class NewsActivity extends ListActivity {
         private NewsActivity activity;
         private String authCode;
         private Resources resources;
+        final int positionToSave = lv.getFirstVisiblePosition();
 
         public LoadMoreFeedsTask(NewsActivity a, String authCode, Resources resources) {
             activity = a;
@@ -284,7 +285,8 @@ public class NewsActivity extends ListActivity {
                     else
                         dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60 * 24))) + " dias";
                     if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
-                        //articleIcon = Utils.downloadArticleImage(load.items.get(i).visual.getUrl());
+                        // articleIcon =
+                        // Utils.downloadArticleImage(load.items.get(i).visual.getUrl());
 
                         listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
                                 load.items.get(i).visual.getUrl(), dateFormatted, load.items.get(i).id, load.items
@@ -304,8 +306,26 @@ public class NewsActivity extends ListActivity {
         @Override
         protected void onPostExecute(Boolean result) {
             setListAdapter(adapter);
-            lv.setSelection(getListAdapter().getCount() - 20);
+            lv.post(new Runnable() {
 
+                @Override
+                public void run() {
+                    lv.setSelection(positionToSave);
+                }
+            });
+
+            lv.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener() {
+
+                @Override
+                public boolean onPreDraw() {
+                    if (lv.getFirstVisiblePosition() == positionToSave) {
+                        lv.getViewTreeObserver().removeOnPreDrawListener(this);
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            });
         }
 
         @Override
@@ -315,9 +335,11 @@ public class NewsActivity extends ListActivity {
 
     @Override
     public void onBackPressed() {
+        super.onBackPressed();
         finish();
         overridePendingTransition(R.anim.anim_close, R.anim.anim_in);
     }
+
     @Override
     public void onStart() {
         super.onStart();

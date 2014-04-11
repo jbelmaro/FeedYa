@@ -16,6 +16,8 @@ import android.text.Html;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.webkit.WebView;
 import android.widget.ShareActionProvider;
 import android.widget.TextView;
@@ -24,15 +26,19 @@ import android.widget.Toast;
 import com.google.analytics.tracking.android.EasyTracker;
 import com.jbelmaro.feedya.util.SaveForLaterItem;
 import com.jbelmaro.feedya.util.Utils;
+import com.jbelmaro.feedya.util.VideoEnabledWebChromeClient;
+import com.jbelmaro.feedya.util.VideoEnabledWebView;
 
 public class ArticleActivity extends FragmentActivity {
 
     ArticlePagerAdapter mArticlePagerAdapter;
     ViewPager mViewPager;
     TextView titleV;
-    WebView content;
+    VideoEnabledWebView content;
+    VideoEnabledWebChromeClient webChromeClient;
     String url;
     String idArticle;
+    String shortenURL;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -43,7 +49,61 @@ public class ArticleActivity extends FragmentActivity {
 
         Bundle extras = getIntent().getExtras();
         titleV = (TextView) findViewById(R.id.title_list_activity_news);
-        content = (WebView) findViewById(R.id.content_news);
+        content = (VideoEnabledWebView) findViewById(R.id.webView);
+        // Initialize the VideoEnabledWebChromeClient and set event handlers
+        View nonVideoLayout = findViewById(R.id.nonVideoLayout); // Your own
+                                                                 // view, read
+                                                                 // class
+                                                                 // comments
+        ViewGroup videoLayout = (ViewGroup) findViewById(R.id.videoLayout); // Your
+                                                                            // own
+                                                                            // view,
+                                                                            // read
+                                                                            // class
+                                                                            // comments
+        View loadingView = getLayoutInflater().inflate(R.layout.loading_video, null); // Your
+        // own
+        // view,
+        // read
+        // class
+        // comments
+        webChromeClient = new VideoEnabledWebChromeClient(nonVideoLayout, videoLayout, loadingView, content) // See
+                                                                                                             // all
+                                                                                                             // available
+                                                                                                             // constructors...
+        {
+            // Subscribe to standard events, such as onProgressChanged()...
+            @Override
+            public void onProgressChanged(WebView view, int progress) {
+                // Your code...
+            }
+        };
+        webChromeClient.setOnToggledFullscreen(new VideoEnabledWebChromeClient.ToggledFullscreenCallback() {
+            @Override
+            public void toggledFullscreen(boolean fullscreen) {
+                // Your code to handle the full-screen change, for example
+                // showing and hiding the title bar. Example:
+                if (fullscreen) {
+                    WindowManager.LayoutParams attrs = getWindow().getAttributes();
+                    attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+                    attrs.flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+                    getWindow().setAttributes(attrs);
+                    if (android.os.Build.VERSION.SDK_INT >= 14) {
+                        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
+                    }
+                } else {
+                    WindowManager.LayoutParams attrs = getWindow().getAttributes();
+                    attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
+                    attrs.flags &= ~WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+                    getWindow().setAttributes(attrs);
+                    if (android.os.Build.VERSION.SDK_INT >= 14) {
+                        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+                    }
+                }
+
+            }
+        });
+        content.setWebChromeClient(webChromeClient);
         titleV.setText(Html.fromHtml(extras.getString("titulo").toUpperCase(Locale.getDefault())));
 
         StringBuilder sb = new StringBuilder();
@@ -54,7 +114,7 @@ public class ArticleActivity extends FragmentActivity {
                 + ".cuerpo{text-align:justify;}img {max-width: 100%;}"
                 + "h1{font-family: 'Droid Serif', serif;}a:link {color:#316CE2;}h5{color:#316CE2;}hr{display: block; height: 1px;border: 0; border-top: 1px solid #316CE2;margin: 1em 0; padding: 0;} "
                 + "</style>"
-                + "<meta name=\"viewport\" content=\"width = device-width,initial-scale=1, maximum-scale=1\"/>"
+                + "<meta name=\"viewport\" content=\"width = device-width,initial-scale=1, user-scale=yes \"/>"
                 + "</head><body>");
         sb.append("<h1>" + extras.getString("noticiaTitulo") + "</h1>");
         sb.append("<h5>" + extras.getString("autorNoticia") + "<br></h5>");
@@ -68,10 +128,9 @@ public class ArticleActivity extends FragmentActivity {
         content.getSettings().setJavaScriptEnabled(true);
         content.getSettings().setLoadWithOverviewMode(true);
         content.getSettings().setUseWideViewPort(true);
-        content.getSettings().setBuiltInZoomControls(true);
-        content.getSettings().setDisplayZoomControls(false);
         content.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
         content.loadDataWithBaseURL("file:///android_asset/", sb.toString(), "text/html", "utf-8", null);
+        shortenURL = Utils.getShortenUrl(authCode, getResources(), extras.getString("idNoticia")).getShortUrl();
 
     }
 
@@ -86,11 +145,9 @@ public class ArticleActivity extends FragmentActivity {
         Intent myIntent = new Intent();
         Bundle extras = getIntent().getExtras();
         myIntent.setAction(Intent.ACTION_SEND);
-        myIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-        myIntent.putExtra(
-                Intent.EXTRA_TEXT,
-                Html.fromHtml(getResources().getString(R.string.share_text) + "\n" + extras.getString("noticiaTitulo")
-                        + "\n" + extras.getString("noticiaLINK")));
+        myIntent.putExtra(Intent.EXTRA_TEXT,
+                getResources().getString(R.string.share_text) + "\n" + extras.getString("noticiaTitulo") + "\n"
+                        + shortenURL);
 
         myIntent.setType("text/plain");
         myShareActionProvider.setShareIntent(myIntent);
@@ -132,9 +189,19 @@ public class ArticleActivity extends FragmentActivity {
 
     @Override
     public void onBackPressed() {
-        content.stopLoading();
-        finish();
-        overridePendingTransition(R.anim.anim_close, R.anim.anim_in);
+        // Notify the VideoEnabledWebChromeClient, and handle it ourselves if it
+        // doesn't handle it
+        if (!webChromeClient.onBackPressed()) {
+            if (content.canGoBack()) {
+                content.goBack();
+            } else {
+                content.stopLoading();
+                finish();
+                overridePendingTransition(R.anim.anim_close, R.anim.anim_in);
+                super.onBackPressed();
+            }
+        }
+
     }
 
     @Override

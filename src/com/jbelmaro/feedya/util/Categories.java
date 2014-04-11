@@ -1,15 +1,17 @@
 package com.jbelmaro.feedya.util;
 
-public class Categories
-{
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-	private Category[] categories;
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class Categories {
 
-	public Category[] getCategories() {
-		return categories;
-	}
+    private Category[] categories;
 
-	public void setCategories(Category[] categories) {
-		this.categories = categories;
-	}
+    public Category[] getCategories() {
+        return categories;
+    }
+
+    public void setCategories(Category[] categories) {
+        this.categories = categories;
+    }
 }

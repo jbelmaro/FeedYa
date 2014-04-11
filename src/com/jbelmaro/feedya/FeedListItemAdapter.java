@@ -83,9 +83,13 @@ public class FeedListItemAdapter extends ArrayAdapter<FeedItemBean> {
         }
         final ViewHolder holder = (ViewHolder) view.getTag();
         holder.text.setText(Html.fromHtml(list.get(position).getTitle()));
-        holder.icon.setImageBitmap(list.get(position).getIcon());
-        holder.icon.getLayoutParams().height = 120;
-        holder.icon.getLayoutParams().width = 120;
+        try {
+            holder.icon.setImageBitmap(list.get(position).getIcon());
+            holder.icon.getLayoutParams().height = 120;
+            holder.icon.getLayoutParams().width = 120;
+        } catch (NullPointerException e) {
+
+        }
         holder.favorite.setImageResource(android.R.drawable.star_off);
 
         View.OnClickListener imgButtonHandler = new View.OnClickListener() {
@@ -165,8 +169,8 @@ public class FeedListItemAdapter extends ArrayAdapter<FeedItemBean> {
                                             tarea.execute(new String[] {});
 
                                         } else {
-                                            Toast.makeText(getContext(), R.string.no_connection,
-                                                    Toast.LENGTH_LONG).show();
+                                            Toast.makeText(getContext(), R.string.no_connection, Toast.LENGTH_LONG)
+                                                    .show();
                                         }
 
                                     }

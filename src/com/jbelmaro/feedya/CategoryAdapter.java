@@ -78,9 +78,13 @@ public class CategoryAdapter extends BaseExpandableListAdapter {
         }
         final ViewHolder holder = (ViewHolder) convertView.getTag();
         holder.text.setText(Html.fromHtml(child.getTitle()));
-        holder.icon.setImageBitmap(child.getIcon());
-        holder.icon.getLayoutParams().height = 120;
-        holder.icon.getLayoutParams().width = 120;
+        try {
+            holder.icon.setImageBitmap(child.getIcon());
+            holder.icon.getLayoutParams().height = 120;
+            holder.icon.getLayoutParams().width = 120;
+        } catch (NullPointerException e) {
+
+        }
         holder.count.setText("" + child.getCount());
         holder.favorite.setFocusable(false);
 
@@ -132,6 +136,10 @@ public class CategoryAdapter extends BaseExpandableListAdapter {
                                 Toast.makeText(v.getContext(), R.string.subs_del, Toast.LENGTH_SHORT).show();
                                 List<FeedItemBean> listABorrar = listFeed.get(categoriesHeader.get(groupPosition)
                                         .getTitle());
+
+                                int total = categoriesHeader.get(groupPosition).getItemCount()
+                                        - listABorrar.get(childPosition).getCount();
+                                categoriesHeader.get(groupPosition).setItemCount(total);
                                 listABorrar.remove(childPosition);
                                 if (listABorrar.size() == 0) {
                                     Log.v("CategoryAdapter", "ESTA VACIA: " + listFeed.size() + " "
@@ -141,8 +149,7 @@ public class CategoryAdapter extends BaseExpandableListAdapter {
                                 }
                                 notifyDataSetChanged();
                             } else {
-                                Toast.makeText(v.getContext(), R.string.subs_del_error, Toast.LENGTH_LONG)
-                                        .show();
+                                Toast.makeText(v.getContext(), R.string.subs_del_error, Toast.LENGTH_LONG).show();
                             }
                         } else {
                             popupWindow.dismiss();

@@ -4,7 +4,6 @@
     android:layout_height="match_parent"
     android:background="@android:color/background_light"
     android:orientation="horizontal"
-    android:paddingBottom="10dp"
     android:paddingRight="10dp" >
 
     <ImageView
@@ -16,11 +15,13 @@
         android:layout_alignParentTop="true"
         android:adjustViewBounds="true"
         android:contentDescription="@string/feed_image"
-        android:scaleType="fitCenter" />
+        android:scaleType="fitCenter" 
+        android:maxWidth="120dp"
+        android:maxHeight="120dp"/>
 
     <TextView
         android:id="@+id/article_title"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"

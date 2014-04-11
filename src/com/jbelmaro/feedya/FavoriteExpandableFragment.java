@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
+import org.robolectric.util.DatabaseConfig.NullDatabaseMapException;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -32,6 +34,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.fasterxml.jackson.databind.deser.impl.NullProvider;
 import com.jbelmaro.feedya.util.Category;
 import com.jbelmaro.feedya.util.CategoryItem;
 import com.jbelmaro.feedya.util.Count;
@@ -118,13 +121,12 @@ public class FavoriteExpandableFragment extends Fragment {
 
         SharedPreferences settings = this.getActivity().getSharedPreferences("FeedYa!Settings", 0);
         String authCode = settings.getString("authCode", "0");
-        LoadCountTask tarea = new LoadCountTask(this, authCode, this.getResources());
+        LoadCategoriesTask tareaCat = new LoadCategoriesTask(this, authCode, this.getResources());
         ConnectivityManager connMgr = (ConnectivityManager) getActivity()
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
         if (networkInfo != null && networkInfo.isConnected()) {
-
-            tarea.execute(new String[] {});
+            tareaCat.execute(new String[] {});
 
         } else {
             Toast.makeText(getActivity(), R.string.no_connection, Toast.LENGTH_LONG).show();
@@ -142,6 +144,7 @@ public class FavoriteExpandableFragment extends Fragment {
         private Bitmap feedIcon;
         private Counts counters;
         private int count;
+        private LoadCountTask tareaCount;
 
         public LoadCategoriesTask(FavoriteExpandableFragment a, String authCode, Resources resources) {
             activity = a;
@@ -154,6 +157,7 @@ public class FavoriteExpandableFragment extends Fragment {
         protected Boolean doInBackground(String... params) {
             counters = Utils.LoadUnreadCounts(authCode, resources);
             categories = Utils.getCategories(authCode, resources);
+            tareaCount = new LoadCountTask(activity, authCode, resources);
 
             if (categories != null) {
                 categoriesHeader = new ArrayList<CategoryItem>();
@@ -182,20 +186,24 @@ public class FavoriteExpandableFragment extends Fragment {
                                 Log.v("FavoriteExpandableFragment", "Category from Subs: " + c.getLabel());
 
                                 if (c.getLabel().toUpperCase(l).equals(categoryGetted)) {
-                                    // feedIcon = Utils.downloadBitmap(subscription.getWebsite());
                                     Class<?> clz = subscription.getClass();
                                     try {
+                                        feedIcon = Utils.downloadBitmap(subscription.getVisualUrl(), true);
                                         Field f = clz.getField("visualUrl");
-                                        feedIcon = Utils.downloadBitmap(subscription.getVisualUrl(),true);
+                                        Log.v("FavoriteExpandableFragment", "visualURL: " + subscription.getVisualUrl());
 
-                                    }
-                                    catch ( NoSuchFieldException ex) {
-                                         feedIcon = Utils.downloadBitmap(subscription.getWebsite(),false);
-                                    }
-                                    catch (SecurityException ex) {
+                                    } catch (NoSuchFieldException ex) {
+                                        // feedIcon =
+                                        // Utils.downloadBitmap(subscription.getWebsite(),
+                                        // false);
+                                    } catch (SecurityException ex) {
                                         // no access to field
+                                    } catch (NullPointerException ex) {
+                                        try {
+                                            feedIcon = Utils.downloadBitmap(subscription.getWebsite(), false);
+                                        } catch (NullPointerException ez) {
+                                        }
                                     }
-                                    
 
                                     Bitmap circleBitmap = Bitmap.createBitmap(feedIcon.getWidth(),
                                             feedIcon.getHeight(), Bitmap.Config.ARGB_8888);
@@ -237,8 +245,10 @@ public class FavoriteExpandableFragment extends Fragment {
 
             expListView.setAdapter(listAdapter);
             registerForContextMenu(expListView);
-            if(listAdapter.isEmpty())
+            if (listAdapter.isEmpty())
                 noFavsTextView.setVisibility(View.VISIBLE);
+            tareaCount.execute(new String[] {});
+
         }
 
         @Override
@@ -275,29 +285,31 @@ public class FavoriteExpandableFragment extends Fragment {
             if (categoriesHeader != null) {
                 for (int i = 0; i < categoriesHeader.size(); i++) {
                     List<FeedItemBean> list = listFeed.get(categoriesHeader.get(i).getTitle());
-                    Iterator<Count> iterator = counters.getUnreadcounts().iterator();
-                    while (iterator.hasNext()) {
-                        Count c = iterator.next();
-                        if (categoriesHeader.get(i).getCategoryId().equals(c.getId())) {
-                            count = c.getCount();
-                            categoriesHeader.get(i).setItemCount(count);
-                        }
-                    }
+                    if (counters != null) {
+                        Iterator<Count> iterator = counters.getUnreadcounts().iterator();
 
-                    for (int j = 0; j < list.size(); j++) {
-                        iterator = counters.getUnreadcounts().iterator();
                         while (iterator.hasNext()) {
                             Count c = iterator.next();
-                            if (list.get(j).getFeedURL().equals(c.getId())) {
+                            if (categoriesHeader.get(i).getCategoryId().equals(c.getId())) {
                                 count = c.getCount();
-                                list.get(j).setCount(count);
+                                categoriesHeader.get(i).setItemCount(count);
+                            }
+                        }
+
+                        for (int j = 0; j < list.size(); j++) {
+                            iterator = counters.getUnreadcounts().iterator();
+                            while (iterator.hasNext()) {
+                                Count c = iterator.next();
+                                if (list.get(j).getFeedURL().equals(c.getId())) {
+                                    count = c.getCount();
+                                    list.get(j).setCount(count);
+                                }
                             }
                         }
                     }
-
                 }
-            }else {
-                
+            } else {
+
             }
 
             return true;

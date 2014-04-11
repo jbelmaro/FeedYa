@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <style name="FeedYaTheme.Dark" parent="android:Theme.Holo.Light">
+    <style name="FeedYaTheme.Dark" parent="android:Theme.Holo">
         <item name="android:actionBarStyle">@style/Theme.FeedYaTheme.Dark.ActionBar</item>
         <item name="android:windowBackground">@color/background.dark</item>
         <item name="android:textColor">@color/background.light</item>
     </style>
 
-    <style name="FeedYaTheme.Light" parent="android:Theme.Holo">
+    <style name="FeedYaTheme.Light" parent="android:Theme.Holo.Light">
         <item name="android:actionBarStyle">@style/Theme.FeedYaTheme.Light.ActionBar</item>
         <item name="android:windowBackground">@color/background.light</item>
     </style>

@@ -3,6 +3,9 @@ package com.jbelmaro.feedya.util;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class FeedItemBean {
 
     private String title;
