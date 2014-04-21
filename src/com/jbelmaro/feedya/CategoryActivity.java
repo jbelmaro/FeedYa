@@ -102,8 +102,11 @@ public class CategoryActivity extends ListActivity {
         intent.putExtra("idNoticia", listaArticles.get(position).id);
         listaArticles.get(position).unread = false;
         ((TextView) v.findViewById(R.id.article_title)).setTextColor(Color.parseColor("#AAAAAA"));
+        ((ArticleItemBean) lv.getItemAtPosition(position)).setUnread(false);
+        SharedPreferences settings = getSharedPreferences("FeedYa!Settings", 0);
+        String authCode = settings.getString("authCode", "0");
+        Utils.markAsReadEntry(authCode, getResources(), listaArticles.get(position).id);
         adapter.notifyDataSetChanged();
-
         startActivity(intent);
         this.overridePendingTransition(R.anim.anim_open, R.anim.anim_out);
     }
@@ -151,109 +154,118 @@ public class CategoryActivity extends ListActivity {
 
         @Override
         protected Boolean doInBackground(String... params) {
+            try {
+                for (String url : params) {
 
-            for (String url : params) {
+                    load = Utils.LoadCategory(authCode, categoryId, resources);
+                    source = url;
+                    Log.i("CategoryActivity", url);
+                    Log.i("CategoryActivity", "tamaño descarga: " + load.items.size());
+                }
 
-                load = Utils.LoadCategory(authCode, categoryId, resources);
-                source = url;
-                Log.i("CategoryActivity", url);
-                Log.i("CategoryActivity", "tamaño descarga: " + load.items.size());
-            }
+                listA = new ArrayList<ArticleItemBean>();
+                if (load != null) {
+                    listaArticles = load.items;
 
-            listA = new ArrayList<ArticleItemBean>();
-            if (load != null) {
-                listaArticles = load.items;
+                    if (load.continuation != null)
+                        continuation = load.continuation;
+                    for (int i = 0; i < load.items.size(); i++) {
 
-                if (load.continuation != null)
-                    continuation = load.continuation;
-                for (int i = 0; i < load.items.size(); i++) {
+                        Log.i("CategoryActivity", "INFONOTICIA: " + load.items.get(i).originId);
+                        Date date = new Date(load.items.get(i).published);
+                        long diff = (new Date()).getTime() - date.getTime();
+                        // DateFormat formatter = new SimpleDateFormat("HH:mm");
+                        // String dateFormatted = formatter.format(date);
+                        String dateFormatted = "";
+                        if ((diff / 1000) < 60)
+                            dateFormatted = "hace " + Integer.toString((int) (diff / 1000)) + " seg.";
+                        else if ((diff / 60000) < 60)
+                            dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60))) + " min.";
+                        else if ((diff / (60000 * 60)) < 24)
+                            dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60))) + " horas";
+                        else
+                            dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60 * 24))) + " dias";
+                        if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
 
-                    Log.i("CategoryActivity", "INFONOTICIA: " + load.items.get(i).originId);
-                    Date date = new Date(load.items.get(i).published);
-                    long diff = (new Date()).getTime() - date.getTime();
-                    // DateFormat formatter = new SimpleDateFormat("HH:mm");
-                    // String dateFormatted = formatter.format(date);
-                    String dateFormatted = "";
-                    if ((diff / 1000) < 60)
-                        dateFormatted = "hace " + Integer.toString((int) (diff / 1000)) + " seg.";
-                    else if ((diff / 60000) < 60)
-                        dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60))) + " min.";
-                    else if ((diff / (60000 * 60)) < 24)
-                        dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60))) + " horas";
-                    else
-                        dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60 * 24))) + " dias";
-                    if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
-
-                        listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                load.items.get(i).visual.getUrl(),
-                                load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id, load.items
-                                        .get(i).unread));
-                        articleIcon = null;
-                    } else {
-                        articleIcon = null;
-                        listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                "", load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id,
-                                load.items.get(i).unread));
+                            listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon,
+                                    load.items.get(i).originId, load.items.get(i).visual.getUrl(),
+                                    load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id,
+                                    load.items.get(i).unread));
+                            articleIcon = null;
+                        } else {
+                            articleIcon = null;
+                            listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon,
+                                    load.items.get(i).originId, "", load.items.get(i).origin.title + "/"
+                                            + dateFormatted, load.items.get(i).id, load.items.get(i).unread));
+                        }
                     }
                 }
+                adapter = new ArticleListItemAdapter(activity, listA);
+                return true;
+            } catch (NullPointerException e) {
+                return false;
             }
-            adapter = new ArticleListItemAdapter(activity, listA);
-            return true;
+
         }
 
         @Override
         protected void onPostExecute(Boolean result) {
             dialog.setVisibility(View.GONE);
+            if (result) {
+                setListAdapter(adapter);
+                displayInterstitial();
+                adapter.notifyDataSetChanged();
+                lv = getListView();
+                lv.setOnItemLongClickListener(new OnItemLongClickListener() {
 
-            setListAdapter(adapter);
-            displayInterstitial();
-            adapter.notifyDataSetChanged();
-            lv = getListView();
-            lv.setOnItemLongClickListener(new OnItemLongClickListener() {
+                    @Override
+                    public boolean onItemLongClick(AdapterView<?> parent, View view, int arg2, long arg3) {
+                        try {
+                            SaveForLaterItem item = new SaveForLaterItem();
+                            item.setEntryId(((ArticleItemBean) getListView().getItemAtPosition(arg2)).getId());
+                            HttpResponse response = Utils.saveForLater(authCode, user, resources, item);
+                            if (response.getStatusLine().getStatusCode() == 200) {
+                                SharedPreferences settings = activity.getSharedPreferences("FeedYa!Settings", 0);
+                                SharedPreferences.Editor editor = settings.edit();
+                                editor.putBoolean("AddedToReadList", true);
+                                editor.commit();
+                                Log.v("CategoryActivity", "Añadido a Lista de Lectura");
+                                Toast.makeText(getApplicationContext(), R.string.added_to_list, Toast.LENGTH_SHORT)
+                                        .show();
 
-                @Override
-                public boolean onItemLongClick(AdapterView<?> parent, View view, int arg2, long arg3) {
-
-                    SaveForLaterItem item = new SaveForLaterItem();
-                    item.setEntryId(((ArticleItemBean) getListView().getItemAtPosition(arg2)).getId());
-                    HttpResponse response = Utils.saveForLater(authCode, user, resources, item);
-                    if (response.getStatusLine().getStatusCode() == 200) {
-                        SharedPreferences settings = activity.getSharedPreferences("FeedYa!Settings", 0);
-                        SharedPreferences.Editor editor = settings.edit();
-                        editor.putBoolean("AddedToReadList", true);
-                        editor.commit();
-                        Log.v("CategoryActivity", "Añadido a Lista de Lectura");
-                        Toast.makeText(getApplicationContext(), R.string.added_to_list, Toast.LENGTH_SHORT).show();
-
-                    } else {
-                        Toast.makeText(getApplicationContext(), R.string.added_to_list_error, Toast.LENGTH_SHORT)
-                                .show();
+                            } else {
+                                Toast.makeText(getApplicationContext(), R.string.added_to_list_error,
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (NullPointerException e) {
+                            //
+                        }
+                        return true;
                     }
-                    return true;
-                }
 
-            });
-            lv.setOnScrollListener(new OnScrollListener() {
+                });
+                lv.setOnScrollListener(new OnScrollListener() {
 
-                @Override
-                public void onScrollStateChanged(AbsListView view, int scrollState) {
-
-                }
-
-                @Override
-                public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                    int lastInScreen = firstVisibleItem + visibleItemCount;
-                    if ((lastInScreen == getListView().getCount()) && !endlist) {
-                        Log.v("CategoryActivity", "Ha bajado hasta abajo");
-                        endlist = true;
-                        LoadMoreFeedsTask tarea = new LoadMoreFeedsTask(activity, authCode, resources);
-                        tarea.execute(new String[] {source});
-                        // lv.setSelection(getListAdapter().getCount() - 1);
+                    @Override
+                    public void onScrollStateChanged(AbsListView view, int scrollState) {
 
                     }
-                }
-            });
 
+                    @Override
+                    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount,
+                            int totalItemCount) {
+                        int lastInScreen = firstVisibleItem + visibleItemCount;
+                        if ((lastInScreen == getListView().getCount()) && !endlist) {
+                            Log.v("CategoryActivity", "Ha bajado hasta abajo");
+                            endlist = true;
+                            LoadMoreFeedsTask tarea = new LoadMoreFeedsTask(activity, authCode, resources);
+                            tarea.execute(new String[] {source});
+                            // lv.setSelection(getListAdapter().getCount() - 1);
+
+                        }
+                    }
+                });
+            }
         }
 
         @Override
@@ -277,77 +289,83 @@ public class CategoryActivity extends ListActivity {
 
         @Override
         protected Boolean doInBackground(String... params) {
-
-            for (String url : params) {
-                load = Utils.LoadCategoryMore(authCode, url, resources, continuation);
-                Log.i("CategoryActivity", url);
-            }
-            if (load != null) {
-                for (int i = 0; i < load.items.size(); i++)
-                    listaArticles.add(load.items.get(i));
-                if (load.continuation != null) {
-                    continuation = load.continuation;
-                    endlist = false;
-                } else
-                    endlist = true;
-                for (int i = 0; i < load.items.size(); i++) {
-
-                    Log.i("CategoryActivity", "INFONOTICIA: " + load.items.get(i).originId);
-                    Date date = new Date(load.items.get(i).published);
-                    long diff = (new Date()).getTime() - date.getTime();
-                    // DateFormat formatter = new SimpleDateFormat("HH:mm");
-                    // String dateFormatted = formatter.format(date);
-
-                    if ((diff / 1000) < 60)
-                        dateFormatted = "hace " + Integer.toString((int) (diff / 1000)) + " seg.";
-                    else if ((diff / 60000) < 60)
-                        dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60))) + " min.";
-                    else if ((diff / (60000 * 60)) < 24)
-                        dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60))) + " horas";
-                    else
-                        dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60 * 24))) + " dias";
-                    if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
-
-                        listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                load.items.get(i).visual.getUrl(),
-                                load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id, load.items
-                                        .get(i).unread));
-                        articleIcon = null;
-                    } else {
-                        articleIcon = null;
-                        listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                "", load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id,
-                                load.items.get(i).unread));
-                    }
+            try {
+                for (String url : params) {
+                    load = Utils.LoadCategoryMore(authCode, url, resources, continuation);
+                    Log.i("CategoryActivity", url);
                 }
-                adapter = new ArticleListItemAdapter(activity, listA);
+                if (load != null) {
+                    for (int i = 0; i < load.items.size(); i++)
+                        listaArticles.add(load.items.get(i));
+                    if (load.continuation != null) {
+                        continuation = load.continuation;
+                        endlist = false;
+                    } else
+                        endlist = true;
+                    for (int i = 0; i < load.items.size(); i++) {
+
+                        Log.i("CategoryActivity", "INFONOTICIA: " + load.items.get(i).originId);
+                        Date date = new Date(load.items.get(i).published);
+                        long diff = (new Date()).getTime() - date.getTime();
+                        // DateFormat formatter = new SimpleDateFormat("HH:mm");
+                        // String dateFormatted = formatter.format(date);
+
+                        if ((diff / 1000) < 60)
+                            dateFormatted = "hace " + Integer.toString((int) (diff / 1000)) + " seg.";
+                        else if ((diff / 60000) < 60)
+                            dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60))) + " min.";
+                        else if ((diff / (60000 * 60)) < 24)
+                            dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60))) + " horas";
+                        else
+                            dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60 * 24))) + " dias";
+                        if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
+
+                            listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon,
+                                    load.items.get(i).originId, load.items.get(i).visual.getUrl(),
+                                    load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id,
+                                    load.items.get(i).unread));
+                            articleIcon = null;
+                        } else {
+                            articleIcon = null;
+                            listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon,
+                                    load.items.get(i).originId, "", load.items.get(i).origin.title + "/"
+                                            + dateFormatted, load.items.get(i).id, load.items.get(i).unread));
+                        }
+                    }
+                    adapter = new ArticleListItemAdapter(activity, listA);
+                }
+                return true;
+            } catch (NullPointerException e) {
+                return false;
             }
-            return true;
+
         }
 
         @Override
         protected void onPostExecute(Boolean result) {
-            setListAdapter(adapter);
-            lv.post(new Runnable() {
+            if (result) {
+                setListAdapter(adapter);
+                lv.post(new Runnable() {
 
-                @Override
-                public void run() {
-                    lv.setSelection(positionToSave);
-                }
-            });
-
-            lv.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener() {
-
-                @Override
-                public boolean onPreDraw() {
-                    if (lv.getFirstVisiblePosition() == positionToSave) {
-                        lv.getViewTreeObserver().removeOnPreDrawListener(this);
-                        return true;
-                    } else {
-                        return false;
+                    @Override
+                    public void run() {
+                        lv.setSelection(positionToSave);
                     }
-                }
-            });
+                });
+
+                lv.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener() {
+
+                    @Override
+                    public boolean onPreDraw() {
+                        if (lv.getFirstVisiblePosition() == positionToSave) {
+                            lv.getViewTreeObserver().removeOnPreDrawListener(this);
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                });
+            }
         }
 
         @Override

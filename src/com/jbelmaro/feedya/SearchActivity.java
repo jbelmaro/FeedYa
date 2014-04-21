@@ -65,8 +65,8 @@ public class SearchActivity extends ListActivity implements SearchView.OnQueryTe
 
         String busqueda = extras.getString("busqueda");
         authCode = extras.getString("authCode");
-        busqueda = busqueda.replace(" ", "%20");
-        mStatusView.setText(Uri.decode(busqueda));
+
+        mStatusView.setText(busqueda);
         SharedPreferences settings = getSharedPreferences("FeedYa!Settings", MODE_PRIVATE);
         authCode = settings.getString("authCode", "0");
         Asincrono tarea = new Asincrono(this, authCode, this.getResources());
@@ -179,52 +179,61 @@ public class SearchActivity extends ListActivity implements SearchView.OnQueryTe
 
         @Override
         protected Boolean doInBackground(String... params) {
-
-            for (String url : params) {
-                load = Utils.FindFeeds(Uri.encode(url), authCode, resources);
-                Log.i("SearchActivity", url);
-            }
-
-            Bitmap feedIcon = null;
-            Drawable favorite = null;
-            Bitmap circleBitmap = null;
             try {
+                for (String url : params) {
+                    load = Utils.FindFeeds(Uri.encode(url), authCode, resources);
+                    Log.i("SearchActivity", url);
+                }
+
+                Bitmap feedIcon = null;
+                Drawable favorite = null;
+                Bitmap circleBitmap = null;
+
                 for (int i = 0; i < load.results.length; i++) {
-                   try {
+                    try {
                         feedIcon = Utils.downloadBitmap(load.results[i].visualUrl, true);
 
                     } catch (NullPointerException ex) {
                         feedIcon = Utils.downloadBitmap(load.results[i].website, false);
                     }
-                    //feedIcon = Utils.downloadBitmap(load.results[i].website, false);
-                    circleBitmap = Bitmap.createBitmap(feedIcon.getWidth(), feedIcon.getHeight(),
-                            Bitmap.Config.ARGB_8888);
-
-                    BitmapShader shader = new BitmapShader(feedIcon, TileMode.CLAMP, TileMode.CLAMP);
-                    Paint paint = new Paint();
-                    paint.setShader(shader);
-                    paint.setColor(0xFFfffff0);
-                    paint.setMaskFilter(new BlurMaskFilter(5.0f, BlurMaskFilter.Blur.INNER));
-                    Canvas canvas = new Canvas(circleBitmap);
-                    canvas.drawCircle(feedIcon.getWidth() / 2, feedIcon.getHeight() / 2,
-                            (float) (feedIcon.getWidth() / 2 - 0.1), paint);
-                    listA.add(new FeedItemBean(load.results[i].title, circleBitmap, favorite, load.results[i].feedId,
+                    // feedIcon = Utils.downloadBitmap(load.results[i].website,
+                    // false);
+                    /*
+                     * circleBitmap = Bitmap.createBitmap(feedIcon.getWidth(),
+                     * feedIcon.getHeight(), Bitmap.Config.ARGB_8888);
+                     * 
+                     * BitmapShader shader = new BitmapShader(feedIcon,
+                     * TileMode.CLAMP, TileMode.CLAMP); Paint paint = new
+                     * Paint(); paint.setShader(shader);
+                     * paint.setColor(0xFFfffff0); paint.setMaskFilter(new
+                     * BlurMaskFilter(5.0f, BlurMaskFilter.Blur.INNER)); Canvas
+                     * canvas = new Canvas(circleBitmap);
+                     * canvas.drawCircle(feedIcon.getWidth() / 2,
+                     * feedIcon.getHeight() / 2, (float) (feedIcon.getWidth() /
+                     * 2 - 0.1), paint);
+                     */
+                    listA.add(new FeedItemBean(load.results[i].title, feedIcon, favorite, load.results[i].feedId,
                             load.results[i].website, null, 0));
                 }
+                adapter = new FeedListItemAdapter(activity, listA);
+                return true;
             } catch (NullPointerException e) {
                 Log.e("SearchActivity", "hay un error porque devuelve la lista vacía");
+                return false;
+
             }
-            adapter = new FeedListItemAdapter(activity, listA);
-            return true;
+
         }
 
         @Override
         protected void onPostExecute(Boolean result) {
 
             dialog.setVisibility(View.GONE);
-            if (listA.isEmpty())
-                mNoResultsView.setVisibility(View.VISIBLE);
-            setListAdapter(adapter);
+            if (result) {
+                if (listA.isEmpty())
+                    mNoResultsView.setVisibility(View.VISIBLE);
+                setListAdapter(adapter);
+            }
         }
 
         @Override

@@ -7,18 +7,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
-import org.robolectric.util.DatabaseConfig.NullDatabaseMapException;
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapShader;
-import android.graphics.BlurMaskFilter;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.Shader.TileMode;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -34,7 +27,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.fasterxml.jackson.databind.deser.impl.NullProvider;
 import com.jbelmaro.feedya.util.Category;
 import com.jbelmaro.feedya.util.CategoryItem;
 import com.jbelmaro.feedya.util.Count;
@@ -155,100 +147,115 @@ public class FavoriteExpandableFragment extends Fragment {
 
         @Override
         protected Boolean doInBackground(String... params) {
-            counters = Utils.LoadUnreadCounts(authCode, resources);
-            categories = Utils.getCategories(authCode, resources);
-            tareaCount = new LoadCountTask(activity, authCode, resources);
+            try {
+                counters = Utils.LoadUnreadCounts(authCode, resources);
+                categories = Utils.getCategories(authCode, resources);
+                tareaCount = new LoadCountTask(activity, authCode, resources);
 
-            if (categories != null) {
-                categoriesHeader = new ArrayList<CategoryItem>();
-                listFeed = new HashMap<String, List<FeedItemBean>>();
-                Locale l = Locale.getDefault();
-                for (Category category : categories) {
-                    Iterator<Count> iterator = counters.getUnreadcounts().iterator();
-                    while (iterator.hasNext()) {
-                        Count c = iterator.next();
-                        if (category.getId().equals(c.getId()))
-                            count = c.getCount();
+                if (categories != null) {
+                    categoriesHeader = new ArrayList<CategoryItem>();
+                    listFeed = new HashMap<String, List<FeedItemBean>>();
+                    Locale l = Locale.getDefault();
+                    for (Category category : categories) {
+                        Iterator<Count> iterator = counters.getUnreadcounts().iterator();
+                        while (iterator.hasNext()) {
+                            Count c = iterator.next();
+                            if (category.getId().equals(c.getId()))
+                                count = c.getCount();
+                        }
+                        categoriesHeader.add(new CategoryItem(category.getLabel().toUpperCase(l), category.getId(),
+                                count));
                     }
-                    categoriesHeader.add(new CategoryItem(category.getLabel().toUpperCase(l), category.getId(), count));
-                }
 
-                subscriptions = Utils.getSubscriptions(authCode, resources);
-                if (subscriptions != null) {
-                    for (int i = 0; i < categoriesHeader.size(); i++) {
-                        String categoryGetted = categoriesHeader.get(i).getTitle();
-                        Log.v("FavoriteExpandableFragment", "Category: " + categoryGetted);
-                        List<FeedItemBean> listFeedReceive = new ArrayList<FeedItemBean>();
-                        for (Subscription subscription : subscriptions) {
+                    subscriptions = Utils.getSubscriptions(authCode, resources);
+                    if (subscriptions != null) {
+                        for (int i = 0; i < categoriesHeader.size(); i++) {
+                            String categoryGetted = categoriesHeader.get(i).getTitle();
+                            Log.v("FavoriteExpandableFragment", "Category: " + categoryGetted);
+                            List<FeedItemBean> listFeedReceive = new ArrayList<FeedItemBean>();
+                            for (Subscription subscription : subscriptions) {
 
-                            for (Category c : subscription.getCategories()) {
+                                for (Category c : subscription.getCategories()) {
 
-                                Log.v("FavoriteExpandableFragment", "Category from Subs: " + c.getLabel());
+                                    Log.v("FavoriteExpandableFragment", "Category from Subs: " + c.getLabel());
 
-                                if (c.getLabel().toUpperCase(l).equals(categoryGetted)) {
-                                    Class<?> clz = subscription.getClass();
-                                    try {
-                                        feedIcon = Utils.downloadBitmap(subscription.getVisualUrl(), true);
-                                        Field f = clz.getField("visualUrl");
-                                        Log.v("FavoriteExpandableFragment", "visualURL: " + subscription.getVisualUrl());
+                                    if (c.getLabel().toUpperCase(l).equals(categoryGetted)) {
+                                        Class<?> clz = subscription.getClass();
+                                        Bitmap circleBitmap = null;
 
-                                    } catch (NoSuchFieldException ex) {
-                                        // feedIcon =
-                                        // Utils.downloadBitmap(subscription.getWebsite(),
-                                        // false);
-                                    } catch (SecurityException ex) {
-                                        // no access to field
-                                    } catch (NullPointerException ex) {
                                         try {
-                                            feedIcon = Utils.downloadBitmap(subscription.getWebsite(), false);
-                                        } catch (NullPointerException ez) {
+                                            feedIcon = Utils.downloadBitmap(subscription.getVisualUrl(), true);
+                                            Field f = clz.getField("visualUrl");
+                                            Log.v("FavoriteExpandableFragment",
+                                                    "visualURL: " + subscription.getVisualUrl());
+
+                                        } catch (NoSuchFieldException ex) {
+                                            // feedIcon =
+                                            // Utils.downloadBitmap(subscription.getWebsite(),
+                                            // false);
+                                        } catch (SecurityException ex) {
+                                            // no access to field
+                                        } catch (NullPointerException ex) {
+                                            try {
+                                                feedIcon = Utils.downloadBitmap(subscription.getWebsite(), false);
+                                            } catch (NullPointerException ez) {
+                                            }
+                                        }/*
+                                          * circleBitmap =
+                                          * Bitmap.createBitmap(feedIcon
+                                          * .getWidth(), feedIcon.getHeight(),
+                                          * Bitmap.Config.ARGB_8888);
+                                          * BitmapShader shader = new
+                                          * BitmapShader(feedIcon,
+                                          * TileMode.CLAMP, TileMode.CLAMP);
+                                          * Paint paint = new Paint();
+                                          * paint.setShader(shader);
+                                          * paint.setColor(0xFFfffff0);
+                                          * paint.setMaskFilter(new
+                                          * BlurMaskFilter(5.0f,
+                                          * BlurMaskFilter.Blur.INNER)); Canvas
+                                          * canvas = new Canvas(circleBitmap);
+                                          * canvas
+                                          * .drawCircle(feedIcon.getWidth() / 2,
+                                          * feedIcon.getHeight() / 2, (float)
+                                          * (feedIcon.getWidth() / 2 - 0.1),
+                                          * paint);
+                                          */
+                                        Iterator<Count> iterator = counters.getUnreadcounts().iterator();
+                                        int countFeed = 0;
+                                        while (iterator.hasNext()) {
+                                            Count countItem = iterator.next();
+                                            if (subscription.getId().equals(countItem.getId()))
+                                                countFeed = countItem.getCount();
                                         }
+                                        FeedItemBean feed = new FeedItemBean(subscription.getTitle(), feedIcon, null,
+                                                subscription.getId(), subscription.getWebsite(), null, countFeed);
+                                        listFeedReceive.add(feed);
                                     }
-
-                                    Bitmap circleBitmap = Bitmap.createBitmap(feedIcon.getWidth(),
-                                            feedIcon.getHeight(), Bitmap.Config.ARGB_8888);
-
-                                    BitmapShader shader = new BitmapShader(feedIcon, TileMode.CLAMP, TileMode.CLAMP);
-                                    Paint paint = new Paint();
-                                    paint.setShader(shader);
-                                    paint.setColor(0xFFfffff0);
-                                    paint.setMaskFilter(new BlurMaskFilter(5.0f, BlurMaskFilter.Blur.INNER));
-                                    Canvas canvas = new Canvas(circleBitmap);
-                                    canvas.drawCircle(feedIcon.getWidth() / 2, feedIcon.getHeight() / 2,
-                                            (float) (feedIcon.getWidth() / 2 - 0.1), paint);
-
-                                    Iterator<Count> iterator = counters.getUnreadcounts().iterator();
-                                    int countFeed = 0;
-                                    while (iterator.hasNext()) {
-                                        Count countItem = iterator.next();
-                                        if (subscription.getId().equals(countItem.getId()))
-                                            countFeed = countItem.getCount();
-                                    }
-                                    FeedItemBean feed = new FeedItemBean(subscription.getTitle(), circleBitmap, null,
-                                            subscription.getId(), subscription.getWebsite(), null, countFeed);
-                                    listFeedReceive.add(feed);
                                 }
                             }
+                            listFeed.put(categoryGetted, listFeedReceive);
                         }
-                        listFeed.put(categoryGetted, listFeedReceive);
                     }
+                    listAdapter = new CategoryAdapter(activity.getActivity(), activity.getActivity(), categoriesHeader,
+                            listFeed);
                 }
-                listAdapter = new CategoryAdapter(activity.getActivity(), activity.getActivity(), categoriesHeader,
-                        listFeed);
+                return true;
+            } catch (NullPointerException e) {
+                return false;
             }
 
-            return true;
         }
 
         @Override
         protected void onPostExecute(Boolean result) {
-
-            expListView.setAdapter(listAdapter);
-            registerForContextMenu(expListView);
-            if (listAdapter.isEmpty())
-                noFavsTextView.setVisibility(View.VISIBLE);
-            tareaCount.execute(new String[] {});
-
+            if (result) {
+                expListView.setAdapter(listAdapter);
+                registerForContextMenu(expListView);
+                if (listAdapter.isEmpty())
+                    noFavsTextView.setVisibility(View.VISIBLE);
+                tareaCount.execute(new String[] {});
+            }
         }
 
         @Override
@@ -281,43 +288,48 @@ public class FavoriteExpandableFragment extends Fragment {
 
         @Override
         protected Boolean doInBackground(String... params) {
-            counters = Utils.LoadUnreadCounts(authCode, resources);
-            if (categoriesHeader != null) {
-                for (int i = 0; i < categoriesHeader.size(); i++) {
-                    List<FeedItemBean> list = listFeed.get(categoriesHeader.get(i).getTitle());
-                    if (counters != null) {
-                        Iterator<Count> iterator = counters.getUnreadcounts().iterator();
+            try {
+                counters = Utils.LoadUnreadCounts(authCode, resources);
+                if (categoriesHeader != null) {
+                    for (int i = 0; i < categoriesHeader.size(); i++) {
+                        List<FeedItemBean> list = listFeed.get(categoriesHeader.get(i).getTitle());
+                        if (counters != null) {
+                            Iterator<Count> iterator = counters.getUnreadcounts().iterator();
 
-                        while (iterator.hasNext()) {
-                            Count c = iterator.next();
-                            if (categoriesHeader.get(i).getCategoryId().equals(c.getId())) {
-                                count = c.getCount();
-                                categoriesHeader.get(i).setItemCount(count);
-                            }
-                        }
-
-                        for (int j = 0; j < list.size(); j++) {
-                            iterator = counters.getUnreadcounts().iterator();
                             while (iterator.hasNext()) {
                                 Count c = iterator.next();
-                                if (list.get(j).getFeedURL().equals(c.getId())) {
+                                if (categoriesHeader.get(i).getCategoryId().equals(c.getId())) {
                                     count = c.getCount();
-                                    list.get(j).setCount(count);
+                                    categoriesHeader.get(i).setItemCount(count);
+                                }
+                            }
+
+                            for (int j = 0; j < list.size(); j++) {
+                                iterator = counters.getUnreadcounts().iterator();
+                                while (iterator.hasNext()) {
+                                    Count c = iterator.next();
+                                    if (list.get(j).getFeedURL().equals(c.getId())) {
+                                        count = c.getCount();
+                                        list.get(j).setCount(count);
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            } else {
+                } else {
 
+                }
+                return true;
+            } catch (NullPointerException e) {
+                return false;
             }
 
-            return true;
         }
 
         @Override
         protected void onPostExecute(Boolean result) {
-            listAdapter.notifyDataSetChanged();
+            if (result)
+                listAdapter.notifyDataSetChanged();
         }
 
         @Override

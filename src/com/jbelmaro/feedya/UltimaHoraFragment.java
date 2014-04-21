@@ -49,6 +49,9 @@ public class UltimaHoraFragment extends ListFragment {
     @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
         Log.i("UltimaHoraFragment", "Item clicked: " + id);
+        SharedPreferences settings = getActivity().getSharedPreferences("FeedYa!Settings", 0);
+        String authCode = settings.getString("authCode", "0");
+        Utils.markAsReadEntry(authCode, getResources(), load.items.get(position).id);
         Intent intent = new Intent(this.getActivity(), ArticleActivity.class);
         intent.putExtra("titulo", "Últimas Noticias");
         if (load.items.get(position).content != null)
@@ -62,7 +65,7 @@ public class UltimaHoraFragment extends ListFragment {
         intent.putExtra("idNoticia", load.items.get(position).id);
         intent.putExtra("fechaNoticia", dateFormatted);
         load.items.get(position).unread = false;
-        ((TextView)v.findViewById(R.id.article_title)).setTextColor(Color.parseColor("#AAAAAA"));
+        ((ArticleItemBean) listUltima.getItemAtPosition(position)).setUnread(false);
         adapter.notifyDataSetChanged();
 
         startActivity(intent);
@@ -232,9 +235,11 @@ public class UltimaHoraFragment extends ListFragment {
 
         @Override
         protected Boolean doInBackground(String... params) {
-
-            load = Utils.LoadLatest(user, authCode, resources);
-
+            try{
+                load = Utils.LoadLatest(user, authCode, resources);
+            }catch(NullPointerException e){
+                //
+            }
             return true;
         }
 

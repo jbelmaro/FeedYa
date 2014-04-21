@@ -107,16 +107,20 @@ public class LecturaFragment extends ListFragment {
 
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int arg2, long arg3) {
-                HttpResponse response = Utils.deleteFromSaveLater(authCode, getResources(), user,
-                        ((ArticleItemBean) getListView().getItemAtPosition(arg2)).getId());
-                if (response.getStatusLine().getStatusCode() == 200) {
-                    Toast.makeText(getActivity().getApplicationContext(), "Borrado de Lista de Lectura",
-                            Toast.LENGTH_LONG).show();
-                    listA.remove(arg2);
-                    adapter.notifyDataSetChanged();
-                } else {
-                    Toast.makeText(getActivity().getApplicationContext(), "No se ha borrado correctamente",
-                            Toast.LENGTH_LONG).show();
+                try {
+                    HttpResponse response = Utils.deleteFromSaveLater(authCode, getResources(), user,
+                            ((ArticleItemBean) getListView().getItemAtPosition(arg2)).getId());
+                    if (response.getStatusLine().getStatusCode() == 200) {
+                        Toast.makeText(getActivity().getApplicationContext(), "Borrado de Lista de Lectura",
+                                Toast.LENGTH_LONG).show();
+                        listA.remove(arg2);
+                        adapter.notifyDataSetChanged();
+                    } else {
+                        Toast.makeText(getActivity().getApplicationContext(), "No se ha borrado correctamente",
+                                Toast.LENGTH_LONG).show();
+                    }
+                } catch (NullPointerException e) {
+
                 }
                 return true;
             }
@@ -213,7 +217,6 @@ public class LecturaFragment extends ListFragment {
                 listLectura.setVisibility(View.GONE);
             }
 
-
         }
 
         @Override
@@ -238,9 +241,11 @@ public class LecturaFragment extends ListFragment {
 
         @Override
         protected Boolean doInBackground(String... params) {
-
-            load = Utils.LoadSavedForLater(user, authCode, resources);
-
+            try{
+                load = Utils.LoadSavedForLater(user, authCode, resources);
+            }catch(NullPointerException e){
+                
+            }
             return true;
         }
 

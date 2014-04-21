@@ -174,6 +174,8 @@ public class Utils {
                 }
                 counts = mapper.readValue(builder.toString(), Counts.class);
             }
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -243,6 +245,8 @@ public class Utils {
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             //
             e.printStackTrace();
@@ -307,6 +311,8 @@ public class Utils {
                 builder.append(line);
             }
             listA = Utils.parseJSONToArticleListBean(builder.toString());
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -375,6 +381,8 @@ public class Utils {
                 builder.append(line);
             }
             listA = Utils.parseJSONToArticleListBean(builder.toString());
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -445,6 +453,8 @@ public class Utils {
                 builder.append(line);
             }
             listA = Utils.parseJSONToArticleListBean(builder.toString());
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -514,6 +524,8 @@ public class Utils {
                 builder.append(line);
             }
             listA = Utils.parseJSONToArticleListBean(builder.toString());
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -582,6 +594,8 @@ public class Utils {
                 builder.append(line);
             }
             listA = Utils.parseJSONToArticleListBean(builder.toString());
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -649,6 +663,8 @@ public class Utils {
                 builder.append(line);
             }
             listF = Utils.parseJSONToFeederListBean(builder.toString());
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -681,13 +697,12 @@ public class Utils {
             URL urldir;
             // URL urldir = new
             // URL("http://s2.googleusercontent.com/s2/favicons?domain=" + url);
-            if (visual){
+            if (visual) {
                 urldir = new URL(url);
-                Log.v("downloadBitmap", "SI "+url);
-            }
-            else{
+                Log.v("downloadBitmap", "SI " + url);
+            } else {
                 urldir = new URL("http://s2.googleusercontent.com/s2/favicons?domain=" + url);
-                Log.v("downloadBitmap", "NO "+url);
+                Log.v("downloadBitmap", "NO " + url);
             }
             URLConnection connection = urldir.openConnection();
             connection.setUseCaches(true);
@@ -699,6 +714,8 @@ public class Utils {
 
             }
 
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -824,6 +841,8 @@ public class Utils {
                 e.printStackTrace();
 
             }
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (ClientProtocolException e) {
             //
             e.printStackTrace();
@@ -898,6 +917,8 @@ public class Utils {
                 e.printStackTrace();
 
             }
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (ClientProtocolException e) {
             //
             e.printStackTrace();
@@ -970,6 +991,8 @@ public class Utils {
                 e.printStackTrace();
 
             }
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -1057,6 +1080,8 @@ public class Utils {
                 e.printStackTrace();
 
             }
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -1143,6 +1168,8 @@ public class Utils {
                 e.printStackTrace();
 
             }
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -1230,6 +1257,8 @@ public class Utils {
 
                 }
             }
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (MalformedURLException e) {
             //
             e.printStackTrace();
@@ -1297,6 +1326,8 @@ public class Utils {
         try {
             response = client.execute(post);
 
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (ClientProtocolException e) {
             //
             e.printStackTrace();
@@ -1347,6 +1378,8 @@ public class Utils {
         try {
             response = client.execute(delete);
 
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (ClientProtocolException e) {
             //
             e.printStackTrace();
@@ -1401,6 +1434,8 @@ public class Utils {
             put.setEntity(new StringEntity(mapper.writeValueAsString(item), "UTF8"));
 
             response = client.execute(put);
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (UnsupportedEncodingException e1) {
             //
             e1.printStackTrace();
@@ -1470,6 +1505,8 @@ public class Utils {
         try {
             response = client.execute(delete);
 
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (ClientProtocolException e) {
             //
             e.printStackTrace();
@@ -1526,6 +1563,8 @@ public class Utils {
         try {
             response = client.execute(post);
 
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (ClientProtocolException e) {
             //
             e.printStackTrace();
@@ -1581,6 +1620,8 @@ public class Utils {
         try {
             response = client.execute(post);
 
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (ClientProtocolException e) {
             //
             e.printStackTrace();
@@ -1635,6 +1676,8 @@ public class Utils {
         try {
             response = client.execute(post);
 
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
         } catch (ClientProtocolException e) {
             //
             e.printStackTrace();
