@@ -1,5 +1,10 @@
 package com.jbelmaro.feedya;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+import android.app.ActionBar;
+import android.app.ActionBar.OnNavigationListener;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
@@ -12,7 +17,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.Window;
+import android.widget.ArrayAdapter;
 import android.widget.SearchView;
 
 import com.espian.showcaseview.OnShowcaseEventListener;
@@ -44,6 +51,40 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
 
         setContentView(R.layout.activity_main);
         // Showcase
+
+        ActionBar actionBar = getActionBar();
+        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
+        SharedPreferences settings = getSharedPreferences("FeedYa!Settings", MODE_PRIVATE);
+        Log.i("MainActivity", "UNREAD: " + settings.getInt("loadValue", 0));
+        select_tab(actionBar, settings.getInt("loadValue", 0));
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.valores_spinner,
+                android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        actionBar.setListNavigationCallbacks(adapter, new OnNavigationListener() {
+
+            @Override
+            public boolean onNavigationItemSelected(int itemPosition, long itemId) {
+                SharedPreferences settings = getSharedPreferences("FeedYa!Settings", MODE_PRIVATE);
+                SharedPreferences.Editor editor = settings.edit();
+
+                switch (itemPosition) {
+                case 0:
+                    editor.putInt("loadValue", 0);
+                    editor.commit();
+
+                    break;
+                case 1:
+                    editor.putInt("loadValue", 1);
+                    editor.commit();
+
+                    break;
+
+                default:
+                    break;
+                }
+                return true;
+            }
+        });
         Tracker tracker = GoogleAnalytics.getInstance(this).getTracker("UA-49378682-1");
 
         tracker.sendView("/MainActivity");
@@ -64,8 +105,6 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main, menu);
         MenuItem searchItem = menu.findItem(R.id.search);
@@ -102,7 +141,6 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
             editor.putBoolean("tutorial", false);
             editor.commit();
         }
-
         return true;
     }
 
@@ -113,7 +151,6 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
         case R.id.action_settings:
 
             startActivity(new Intent(this, SettingsActivity.class));
-            finish();
         default:
             return super.onOptionsItemSelected(item);
         }
@@ -178,6 +215,12 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
         if (adView != null) {
             adView.resume();
         }
+
+        SharedPreferences settings = getSharedPreferences("FeedYa!Settings", 0);
+        ActionBar actionBar = getActionBar();
+        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
+        select_tab(actionBar, settings.getInt("loadValue", 0));
+
     }
 
     @Override
@@ -224,5 +267,35 @@ public class MainActivity extends FragmentActivity implements SearchView.OnQuery
     public void onShowcaseViewShow(ShowcaseView showcaseView) {
         // TODO Auto-generated method stub
 
+    }
+
+    private void select_tab(ActionBar b, int pos) {
+        try {
+            // do the normal tab selection in case all tabs are visible
+            b.setSelectedNavigationItem(pos);
+
+            // now use reflection to select the correct Spinner if
+            // the bar's tabs have been reduced to a Spinner
+
+            View action_bar_view = findViewById(getResources().getIdentifier("action_bar", "id", "android"));
+            Class<?> action_bar_class = action_bar_view.getClass();
+            Field tab_scroll_view_prop = action_bar_class.getDeclaredField("mTabScrollView");
+            tab_scroll_view_prop.setAccessible(true);
+            // get the value of mTabScrollView in our action bar
+            Object tab_scroll_view = tab_scroll_view_prop.get(action_bar_view);
+            if (tab_scroll_view == null)
+                return;
+            Field spinner_prop = tab_scroll_view.getClass().getDeclaredField("mTabSpinner");
+            spinner_prop.setAccessible(true);
+            // get the value of mTabSpinner in our scroll view
+            Object tab_spinner = spinner_prop.get(tab_scroll_view);
+            if (tab_spinner == null)
+                return;
+            Method set_selection_method = tab_spinner.getClass().getSuperclass()
+                    .getDeclaredMethod("setSelection", Integer.TYPE, Boolean.TYPE);
+            set_selection_method.invoke(tab_spinner, pos, true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

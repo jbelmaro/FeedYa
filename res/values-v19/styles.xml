@@ -18,7 +18,7 @@
         <item name="android:titleTextStyle">@style/Theme.FeedYaTheme.Light.ActionBar.TitleTextStyle</item>
     </style>
 
-    <style name="Theme.FeedYaTheme.Light.ActionBar" parent="android:style/Widget.Holo.ActionBar">
+    <style name="Theme.FeedYaTheme.Light.ActionBar" parent="android:style/Widget.Holo.Light.ActionBar">
         <item name="android:background">@color/background.light</item>
         <item name="android:titleTextStyle">@style/Theme.FeedYaTheme.Light.ActionBar.TitleTextStyle</item>
     </style>

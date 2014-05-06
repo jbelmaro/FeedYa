@@ -31,6 +31,8 @@ import com.jbelmaro.feedya.util.VideoEnabledWebView;
 
 public class ArticleActivity extends FragmentActivity {
 
+    private final String TAPPX_KEY = "/120940746/Pub-1333-Android-4029";
+
     ArticlePagerAdapter mArticlePagerAdapter;
     ViewPager mViewPager;
     TextView titleV;
@@ -44,10 +46,23 @@ public class ArticleActivity extends FragmentActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_article);
         try {
             Bundle extras = getIntent().getExtras();
+            SharedPreferences settings = getSharedPreferences("FeedYa!Settings", 0);
+            String authCode = settings.getString("authCode", "0");
+            SharedPreferences.Editor editor = settings.edit();
+            int tappxCount = settings.getInt("tappxAd", 0);
+            if (tappxCount == 5) {
+                com.tappx.ads.exchange.Utils.InterstitialConfigureAndShow(this, TAPPX_KEY);
+                editor.putInt("tappxAd", 0);
+            } else {
+                tappxCount++;
+                editor.putInt("tappxAd", tappxCount);
+            }
+            editor.commit();
+
+            shortenURL = Utils.getShortenUrl(authCode, getResources(), extras.getString("idNoticia")).getShortUrl();
             titleV = (TextView) findViewById(R.id.title_list_activity_news);
             content = (VideoEnabledWebView) findViewById(R.id.webView);
             // Initialize the VideoEnabledWebChromeClient and set event handlers
@@ -123,15 +138,13 @@ public class ArticleActivity extends FragmentActivity {
 
             url = extras.getString("noticiaURL");
             idArticle = extras.getString("idNoticia");
-            SharedPreferences settings = getSharedPreferences("FeedYa!Settings", 0);
-            String authCode = settings.getString("authCode", "0");
+
             // Utils.markAsReadEntry(authCode, getResources(), idArticle);
             content.getSettings().setJavaScriptEnabled(true);
             content.getSettings().setLoadWithOverviewMode(true);
             content.getSettings().setUseWideViewPort(true);
             content.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
             content.loadDataWithBaseURL("file:///android_asset/", sb.toString(), "text/html", "utf-8", null);
-            shortenURL = Utils.getShortenUrl(authCode, getResources(), extras.getString("idNoticia")).getShortUrl();
         } catch (NullPointerException e) {
             //
         }
@@ -173,6 +186,7 @@ public class ArticleActivity extends FragmentActivity {
         switch (item.getItemId()) {
         case R.id.action_settings:
             startActivity(new Intent(this, SettingsActivity.class));
+            break;
         case R.id.save:
             Toast.makeText(getApplicationContext(), R.string.added_to_list, Toast.LENGTH_SHORT).show();
             SharedPreferences settings = getSharedPreferences("FeedYa!Settings", 0);
@@ -184,10 +198,11 @@ public class ArticleActivity extends FragmentActivity {
             SharedPreferences.Editor editor = settings.edit();
             editor.putBoolean("AddedToReadList", true);
             editor.commit();
-
+            break;
         default:
             return super.onOptionsItemSelected(item);
         }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override

@@ -44,5 +44,12 @@
     <string name="showcase_title">"Primeros Pasos"</string>
     <string name="showcase_msg">"Pulse para buscar sus feeds, blogs y noticias favoritos"</string>
     <string name="showcase_pager">"Arrastre entre sus Feed Favoritos, Lista de Lectura y Ultima Hora"</string>
-    <string name="showcase_push">"Si realiza una pulsación larga sobre un artículo lo añadirá a su Lista de Lectura"</string><string name="share_app">"FeedYa!. Tu aplicación para estar siempre informado. http://goo.gl/drnDpF"</string>
+    <string name="showcase_push">"Si realiza una pulsación larga sobre un artículo lo añadirá a su Lista de Lectura"</string>
+    <string name="share_app">"FeedYa!. Tu aplicación para estar siempre informado. http://goo.gl/drnDpF"</string>
+    <string name="action_refresh">Actualizar</string>
+    <string-array name="valores_spinner">
+        <item>Todos</item>
+        <item>No Leídos</item>
+    </string-array>
+
 </resources>

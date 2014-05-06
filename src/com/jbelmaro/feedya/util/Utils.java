@@ -44,6 +44,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jbelmaro.feedya.R;
@@ -58,6 +59,7 @@ public class Utils {
      */
     public static String parseRequest2JSON(Object request) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         ByteArrayOutputStream baosRequest = new ByteArrayOutputStream();
         try {
             mapper.writeValue(baosRequest, request);
@@ -76,6 +78,7 @@ public class Utils {
 
     public static StreamContentResponse parseJSONToArticleListBean(String value) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         StreamContentResponse bean = null;
         try {
             bean = mapper.readValue(value, StreamContentResponse.class);
@@ -109,6 +112,7 @@ public class Utils {
 
     public static SearchFeedsResponse parseJSONToFeederListBean(String value) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         SearchFeedsResponse bean = null;
         try {
             bean = mapper.readValue(value, SearchFeedsResponse.class);
@@ -169,6 +173,7 @@ public class Utils {
             if (connection != null) {
                 reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 ObjectMapper mapper = new ObjectMapper();
+                mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
                 while ((line = reader.readLine()) != null) {
                     builder.append(line);
                 }
@@ -198,7 +203,7 @@ public class Utils {
         return counts;
     }
 
-    public static StreamContentResponse LoadFeeds(String query, String authCode, Resources resources) {
+    public static StreamContentResponse LoadFeeds(String query, String authCode, Resources resources, String unread)  {
         URL url = null;
         HttpURLConnection connection = null;
         String line;
@@ -229,7 +234,7 @@ public class Utils {
         String feedURL = props.getProperty("feedPath");
 
         try {
-            url = new URL(feedURL + "/" + URLEncoder.encode(query, "UTF-8") + "/contents?count=10");
+            url = new URL(feedURL + "/" + URLEncoder.encode(query, "UTF-8") + "/contents?count=10"+unread);
             connection = (HttpURLConnection) url.openConnection();
             connection.setReadTimeout(10000 /* milliseconds */);
             connection.setConnectTimeout(15000 /* milliseconds */);
@@ -266,7 +271,7 @@ public class Utils {
     }
 
     public static StreamContentResponse LoadMoreFeeds(String query, String authCode, Resources resources,
-            String continuation) {
+            String continuation, String unread)  {
         URL url = null;
         HttpURLConnection connection = null;
         String line;
@@ -298,7 +303,7 @@ public class Utils {
 
         try {
             url = new URL(feedURL + "/" + URLEncoder.encode(query, "UTF-8") + "/contents?count=10&continuation="
-                    + continuation);
+                    + continuation+unread);
             connection = (HttpURLConnection) url.openConnection();
             connection.setReadTimeout(10000 /* milliseconds */);
             connection.setConnectTimeout(15000 /* milliseconds */);
@@ -335,7 +340,7 @@ public class Utils {
         return listA;
     }
 
-    public static StreamContentResponse LoadLatest(String user, String authCode, Resources resources) {
+    public static StreamContentResponse LoadLatest(String user, String authCode, Resources resources, String unread)  {
         URL url = null;
         HttpURLConnection connection = null;
         String line;
@@ -367,7 +372,7 @@ public class Utils {
 
         try {
             url = new URL(feedURL + "/contents?streamId=user%2F" + URLEncoder.encode(user, "UTF-8")
-                    + "%2Fcategory%2Fglobal.all&count=10&ranked=newest");
+                    + "%2Fcategory%2Fglobal.all&count=10&ranked=newest"+unread);
             System.out.println("URL: " + url);
             connection = (HttpURLConnection) url.openConnection();
             connection.setReadTimeout(10000 /* milliseconds */);
@@ -405,7 +410,7 @@ public class Utils {
         return listA;
     }
 
-    public static StreamContentResponse LoadCategory(String authCode, String categoryId, Resources resources) {
+    public static StreamContentResponse LoadCategory(String authCode, String categoryId, Resources resources, String unread) {
         URL url = null;
         HttpURLConnection connection = null;
         String line;
@@ -437,7 +442,7 @@ public class Utils {
 
         try {
             url = new URL(feedURL + "/contents?streamId=" + URLEncoder.encode(categoryId, "UTF-8") + "%2F"
-                    + "&count=10");
+                    + "&count=10"+unread);
             System.out.println("URL: " + URLEncoder.encode(categoryId, "UTF-8"));
 
             System.out.println("URL: " + url);
@@ -478,7 +483,7 @@ public class Utils {
     }
 
     public static StreamContentResponse LoadCategoryMore(String authCode, String categoryId, Resources resources,
-            String continuation) {
+            String continuation, String unread)  {
         URL url = null;
         HttpURLConnection connection = null;
         String line;
@@ -510,7 +515,7 @@ public class Utils {
 
         try {
             url = new URL(feedURL + "/contents?streamId=" + URLEncoder.encode(categoryId, "UTF-8") + "%2F"
-                    + "&count=10&continuation=" + continuation);
+                    + "&count=10&continuation=" + continuation+unread);
             System.out.println("URL: " + url);
             connection = (HttpURLConnection) url.openConnection();
             connection.setReadTimeout(10000 /* milliseconds */);
@@ -733,7 +738,53 @@ public class Utils {
 
         return image;
     }
+    public static byte[] downloadBitmapByte(String url, boolean visual) {
+        Bitmap image = null;
+        byte[] icon = null;
+        // initilize the default HTTP client object
+        InputStream response = null;
+        try {
+            URL urldir;
+            // URL urldir = new
+            // URL("http://s2.googleusercontent.com/s2/favicons?domain=" + url);
+            if (visual) {
+                urldir = new URL(url);
+                Log.v("downloadBitmap", "SI " + url);
+            } else {
+                urldir = new URL("http://s2.googleusercontent.com/s2/favicons?domain=" + url);
+                Log.v("downloadBitmap", "NO " + url);
+            }
+            URLConnection connection = urldir.openConnection();
+            connection.setUseCaches(true);
 
+            response = (InputStream) connection.getContent();
+            if (response instanceof InputStream) {
+
+                image = BitmapFactory.decodeStream(response);
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                image.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                icon = stream.toByteArray();
+            }
+
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
+        } catch (MalformedURLException e) {
+            //
+            e.printStackTrace();
+        } catch (IOException e) {
+            //
+            e.printStackTrace();
+        } finally {
+            try {
+                response.close();
+            } catch (IOException e) {
+                //
+                e.printStackTrace();
+            }
+        }
+
+        return icon;
+    }
     public static Bitmap downloadArticleImage(String imageUrl) {
         InputStream input = null;
         try {
@@ -825,6 +876,7 @@ public class Utils {
 
             String responseText = EntityUtils.toString(entity);
             ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 
             try {
                 bean = mapper.readValue(responseText, ExchangeCodeResponse.class);
@@ -901,6 +953,7 @@ public class Utils {
 
             String responseText = EntityUtils.toString(entity);
             ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
 
             try {
                 bean = mapper.readValue(responseText, ExchangeCodeResponse.class);
@@ -976,6 +1029,8 @@ public class Utils {
                 builder.append(line);
             }
             ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+
             try {
                 profile = mapper.readValue(builder.toString(), Profile.class);
             } catch (JsonGenerationException e) {
@@ -1064,6 +1119,7 @@ public class Utils {
                 builder.append(line);
             }
             ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
             try {
                 categories = mapper.readValue(builder.toString(), new TypeReference<List<Category>>() {
                 });
@@ -1152,6 +1208,7 @@ public class Utils {
                 builder.append(line);
             }
             ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
             try {
                 subscriptions = mapper.readValue(builder.toString(), new TypeReference<List<Subscription>>() {
                 });
@@ -1241,6 +1298,7 @@ public class Utils {
                     builder.append(line);
                 }
                 ObjectMapper mapper = new ObjectMapper();
+                mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
                 try {
                     shorten = mapper.readValue(builder.toString(), ShortenURL.class);
                 } catch (JsonGenerationException e) {
@@ -1308,6 +1366,7 @@ public class Utils {
             }
         }
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         String subscriptionsURL = props.getProperty("subscriptionsPath");
         HttpPost post = new HttpPost(subscriptionsURL);
         post.addHeader("Authorization", authCode);
@@ -1417,6 +1476,7 @@ public class Utils {
             }
         }
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         String tagsURL = props.getProperty("tagsPath");
         URL url;
         HttpResponse response = null;
@@ -1544,6 +1604,7 @@ public class Utils {
             }
         }
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         String markersURL = props.getProperty("markersPath");
         HttpPost post = new HttpPost(markersURL);
         MarkedAsReadEntry entry = new MarkedAsReadEntry("entries", "markAsRead", entryId);
@@ -1601,6 +1662,7 @@ public class Utils {
             }
         }
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         String markersURL = props.getProperty("markersPath");
         HttpPost post = new HttpPost(markersURL);
         MarkAsReadFeed entry = new MarkAsReadFeed("feeds", "markAsRead", feedId);
@@ -1658,6 +1720,7 @@ public class Utils {
             }
         }
         ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         String subscriptionsURL = props.getProperty("subscriptionsPath");
         HttpPost post = new HttpPost(subscriptionsURL);
         post.addHeader("Authorization", authCode);

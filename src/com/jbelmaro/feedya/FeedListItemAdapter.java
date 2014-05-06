@@ -219,6 +219,10 @@ public class FeedListItemAdapter extends ArrayAdapter<FeedItemBean> {
         @Override
         protected void onPostExecute(Boolean result) {
             if (response.getStatusLine().getStatusCode() == 200) {
+                SharedPreferences settings = getContext().getSharedPreferences("FeedYa!Settings", 0);
+                SharedPreferences.Editor editor = settings.edit();
+                editor.putBoolean("NuevaCategoria", true);
+                editor.commit();
                 Toast.makeText(getContext(), "Se ha añadido una nueva subscripcion", Toast.LENGTH_LONG).show();
             } else {
                 Toast.makeText(getContext(), "No se ha añadido correctamente", Toast.LENGTH_LONG).show();

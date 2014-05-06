@@ -46,5 +46,10 @@
     <string name="showcase_pager">"Navigate between your ReadList, Favorites and Last News"</string>
     <string name="showcase_push">"Long press over an article and it will save it into ReadList"</string>
     <string name="share_app">"FeedYa!. Your app to be up to the news. http://goo.gl/drnDpF"</string>
+    <string name="action_refresh">Refresh</string>
+    <string-array name="valores_spinner">
+        <item>All</item>
+        <item>Unread</item>
+    </string-array>
 
 </resources>

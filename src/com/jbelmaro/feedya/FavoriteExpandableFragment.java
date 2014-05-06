@@ -1,5 +1,6 @@
 package com.jbelmaro.feedya;
 
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,11 +8,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -32,7 +37,9 @@ import com.jbelmaro.feedya.util.CategoryItem;
 import com.jbelmaro.feedya.util.Count;
 import com.jbelmaro.feedya.util.Counts;
 import com.jbelmaro.feedya.util.FeedItemBean;
+import com.jbelmaro.feedya.util.SQLiteUtils;
 import com.jbelmaro.feedya.util.Subscription;
+import com.jbelmaro.feedya.util.Utils;
 import com.jbelmaro.feedya.util.Utils;
 
 public class FavoriteExpandableFragment extends Fragment {
@@ -47,7 +54,7 @@ public class FavoriteExpandableFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        loadFromDB();
         SharedPreferences settings = this.getActivity().getSharedPreferences("FeedYa!Settings", 0);
         String authCode = settings.getString("authCode", "0");
 
@@ -96,7 +103,6 @@ public class FavoriteExpandableFragment extends Fragment {
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-
     }
 
     public void onBackPressed() {
@@ -113,17 +119,20 @@ public class FavoriteExpandableFragment extends Fragment {
 
         SharedPreferences settings = this.getActivity().getSharedPreferences("FeedYa!Settings", 0);
         String authCode = settings.getString("authCode", "0");
-        LoadCategoriesTask tareaCat = new LoadCategoriesTask(this, authCode, this.getResources());
-        ConnectivityManager connMgr = (ConnectivityManager) getActivity()
-                .getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-        if (networkInfo != null && networkInfo.isConnected()) {
-            tareaCat.execute(new String[] {});
-
-        } else {
-            Toast.makeText(getActivity(), R.string.no_connection, Toast.LENGTH_LONG).show();
+        if (settings.getBoolean("NuevaCategoria", false)) {
+            LoadCategoriesTask tareaCat = new LoadCategoriesTask(this, authCode, this.getResources());
+            ConnectivityManager connMgr = (ConnectivityManager) getActivity().getSystemService(
+                    Context.CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+            if (networkInfo != null && networkInfo.isConnected()) {
+                tareaCat.execute(new String[] {});
+                SharedPreferences.Editor editor = settings.edit();
+                editor.putBoolean("NuevaCategoria", false);
+                editor.commit();
+            } else {
+                Toast.makeText(getActivity(), R.string.no_connection, Toast.LENGTH_LONG).show();
+            }
         }
-
     }
 
     private class LoadCategoriesTask extends AsyncTask<String, Integer, Boolean> {
@@ -151,7 +160,9 @@ public class FavoriteExpandableFragment extends Fragment {
                 counters = Utils.LoadUnreadCounts(authCode, resources);
                 categories = Utils.getCategories(authCode, resources);
                 tareaCount = new LoadCountTask(activity, authCode, resources);
-
+                SQLiteUtils sqlite = new SQLiteUtils(getActivity(), "DBFeedYa", null, 1);
+                SQLiteDatabase db = sqlite.getWritableDatabase();
+                sqlite.onUpgrade(db, 0, 1);
                 if (categories != null) {
                     categoriesHeader = new ArrayList<CategoryItem>();
                     listFeed = new HashMap<String, List<FeedItemBean>>();
@@ -159,18 +170,32 @@ public class FavoriteExpandableFragment extends Fragment {
                     for (Category category : categories) {
                         Iterator<Count> iterator = counters.getUnreadcounts().iterator();
                         while (iterator.hasNext()) {
+
                             Count c = iterator.next();
                             if (category.getId().equals(c.getId()))
                                 count = c.getCount();
                         }
                         categoriesHeader.add(new CategoryItem(category.getLabel().toUpperCase(l), category.getId(),
                                 count));
+
+                        db = sqlite.getWritableDatabase();
+                        ContentValues values = new ContentValues();
+                        values.put("title", category.getLabel().toUpperCase(l));
+                        values.put("catId", category.getId());
+                        values.put("countCat", count);
+                        Log.i("FavoritesFragment", "introduce database Category:\n" + "\nTitle: "
+                                + category.getLabel().toUpperCase(l) + "\ncatID: " + category.getId());
+                        // Inserting Row
+                        db.insert("Category", null, values);
+                        db.close(); // Closing database connection
                     }
 
                     subscriptions = Utils.getSubscriptions(authCode, resources);
                     if (subscriptions != null) {
                         for (int i = 0; i < categoriesHeader.size(); i++) {
                             String categoryGetted = categoriesHeader.get(i).getTitle();
+                            String categoryGettedId = categoriesHeader.get(i).getCategoryId();
+
                             Log.v("FavoriteExpandableFragment", "Category: " + categoryGetted);
                             List<FeedItemBean> listFeedReceive = new ArrayList<FeedItemBean>();
                             for (Subscription subscription : subscriptions) {
@@ -182,12 +207,16 @@ public class FavoriteExpandableFragment extends Fragment {
                                     if (c.getLabel().toUpperCase(l).equals(categoryGetted)) {
                                         Class<?> clz = subscription.getClass();
                                         Bitmap circleBitmap = null;
+                                        ContentValues values = new ContentValues();
 
                                         try {
                                             feedIcon = Utils.downloadBitmap(subscription.getVisualUrl(), true);
                                             Field f = clz.getField("visualUrl");
                                             Log.v("FavoriteExpandableFragment",
                                                     "visualURL: " + subscription.getVisualUrl());
+
+                                            values.put("icon",
+                                                    Utils.downloadBitmapByte(subscription.getVisualUrl(), true));
 
                                         } catch (NoSuchFieldException ex) {
                                             // feedIcon =
@@ -198,6 +227,18 @@ public class FavoriteExpandableFragment extends Fragment {
                                         } catch (NullPointerException ex) {
                                             try {
                                                 feedIcon = Utils.downloadBitmap(subscription.getWebsite(), false);
+                                                /*
+                                                 * ByteArrayOutputStream stream
+                                                 * = new
+                                                 * ByteArrayOutputStream();
+                                                 * feedIcon
+                                                 * .compress(Bitmap.CompressFormat
+                                                 * .PNG, 100, stream); byte[]
+                                                 * byteArray =
+                                                 * stream.toByteArray();
+                                                 */
+                                                values.put("icon",
+                                                        Utils.downloadBitmapByte(subscription.getVisualUrl(), false));
                                             } catch (NullPointerException ez) {
                                             }
                                         }/*
@@ -231,14 +272,30 @@ public class FavoriteExpandableFragment extends Fragment {
                                         FeedItemBean feed = new FeedItemBean(subscription.getTitle(), feedIcon, null,
                                                 subscription.getId(), subscription.getWebsite(), null, countFeed);
                                         listFeedReceive.add(feed);
+                                        db = sqlite.getWritableDatabase();
+
+                                        values.put("title", subscription.getTitle());
+                                        values.put("subsId", subscription.getId());
+                                        values.put("feedURL", subscription.getWebsite());
+
+                                        values.put("catId", categoryGettedId);
+                                        values.put("catTitle", categoryGetted);
+                                        values.put("countFeed", countFeed);
+                                        Log.i("FavoritesFragment", "introduce database feed:\n" + "\nTitle: "
+                                                + subscription.getTitle() + "\nsubsID: " + subscription.getId()
+                                                + "\nfeedURL: " + subscription.getWebsite() + "\nCOUNT: " + countFeed
+                                                + "\nCAT: " + categoryGetted + "\ncatID: " + categoryGettedId);
+                                        // Inserting Row
+                                        db.insert("Feeds", null, values);
+                                        db.close(); // Closing database
+                                                    // connection
                                     }
                                 }
                             }
                             listFeed.put(categoryGetted, listFeedReceive);
                         }
                     }
-                    listAdapter = new CategoryAdapter(activity.getActivity(), activity.getActivity(), categoriesHeader,
-                            listFeed);
+                    listAdapter = new CategoryAdapter(getActivity(), getActivity(), categoriesHeader, listFeed);
                 }
                 return true;
             } catch (NullPointerException e) {
@@ -330,6 +387,8 @@ public class FavoriteExpandableFragment extends Fragment {
         protected void onPostExecute(Boolean result) {
             if (result)
                 listAdapter.notifyDataSetChanged();
+            if (listFeed.size() > 0)
+                noFavsTextView.setVisibility(View.GONE);
         }
 
         @Override
@@ -343,5 +402,61 @@ public class FavoriteExpandableFragment extends Fragment {
             super.onCancelled(result);
         }
 
+    }
+
+    public void loadFromDB() {
+        SQLiteUtils sqlite = new SQLiteUtils(getActivity(), "DBFeedYa", null, 1);
+        SQLiteDatabase db = sqlite.getReadableDatabase();
+        Cursor category = db.rawQuery(" SELECT * FROM Category", null);
+        Cursor feed = db.rawQuery(" SELECT * FROM Feeds", null);
+        categoriesHeader = new ArrayList<CategoryItem>();
+        listFeed = new HashMap<String, List<FeedItemBean>>();
+        Locale l = Locale.getDefault();
+
+        if (category.moveToFirst()) {
+            // Recorremos el cursor hasta que no haya m??s registros
+            do {
+                List<FeedItemBean> listFeedReceive = new ArrayList<FeedItemBean>();
+
+                Log.i("FavoritesFragment", "database Cat:\n" + "\nTitle: " + category.getString(0) + "\ncatID: "
+                        + category.getString(1) + "\nCOUNT_CAT: " + category.getInt(2));
+                categoriesHeader.add(new CategoryItem(category.getString(0).toUpperCase(l), category.getString(1),
+                        category.getInt(2)));
+
+                String categoryGetted = category.getString(0);
+
+                if (feed.moveToFirst()) {
+                    do {
+
+                        Log.i("FavoritesFragment", "database feed:\n" + "\nTitle: " + feed.getString(0) + "\nsubsID: "
+                                + feed.getString(1) + "\nfeedURL: " + feed.getString(2) + "\nCOUNT: " + feed.getInt(4));
+                        if (feed.getString(6).toUpperCase(l).equals(categoryGetted)) {
+                            byte[] feedIcon = feed.getBlob(3);
+                            if (feedIcon != null) {
+                                Bitmap icon = BitmapFactory.decodeByteArray(feedIcon, 0, feedIcon.length);
+                                FeedItemBean feedItem = new FeedItemBean(feed.getString(0), icon, null,
+                                        feed.getString(1), feed.getString(2), null, feed.getInt(4));
+                                listFeedReceive.add(feedItem);
+                                Log.i("FavoritesFragment", "feed: " + feedIcon.toString());
+
+                            } else {
+                                FeedItemBean feedItem = new FeedItemBean(feed.getString(0), null, null,
+                                        feed.getString(1), feed.getString(2), null, feed.getInt(4));
+                                listFeedReceive.add(feedItem);
+                            }
+
+                        }
+
+                    } while (feed.moveToNext());
+                }
+
+                listFeed.put(categoryGetted, listFeedReceive);
+
+            } while (category.moveToNext());
+            listAdapter = new CategoryAdapter(getActivity(), getActivity(), categoriesHeader, listFeed);
+            listAdapter.notifyDataSetChanged();
+        }
+        Log.i("FavoritesFragment", "DB STATUS: " + db.getPath());
+        db.close();
     }
 }

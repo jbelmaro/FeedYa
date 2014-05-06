@@ -14,8 +14,11 @@ public class ArticleItemBean {
     private String time;
     private String id;
     private boolean unread;
+    private String content;
+    private String author;
 
-    public ArticleItemBean(String t, Bitmap i, String articleURL, String iconURL, String time, String id, boolean unread) {
+    public ArticleItemBean(String t, Bitmap i, String articleURL, String iconURL, String time, String id,
+            boolean unread, String content, String author) {
         // TODO Auto-generated constructor stub
         title = t;
         icon = i;
@@ -24,7 +27,8 @@ public class ArticleItemBean {
         this.setTime(time);
         this.setId(id);
         this.unread = unread;
-
+        this.setContent(content);
+        this.setAuthor(author);
     }
 
     public String getTitle() {
@@ -81,6 +85,22 @@ public class ArticleItemBean {
 
     public void setUnread(boolean unread) {
         this.unread = unread;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
     }
 
 }

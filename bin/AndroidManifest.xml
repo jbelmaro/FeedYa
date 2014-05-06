@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.jbelmaro.feedya"
     android:installLocation="auto"
-    android:versionCode="19"
-    android:versionName="1.0.1" >
+    android:versionCode="20"
+    android:versionName="1.0.2" >
 
     <uses-sdk
         android:minSdkVersion="14"
@@ -23,6 +23,9 @@
 
         <activity
             android:name="com.google.android.gms.ads.AdActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize" />
+        <activity
+            android:name="com.tappx.ads.AdActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize" />
         <activity
             android:name="com.jbelmaro.feedya.SplashScreenActivity"

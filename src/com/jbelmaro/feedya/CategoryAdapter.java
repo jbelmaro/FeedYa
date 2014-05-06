@@ -252,4 +252,20 @@ public class CategoryAdapter extends BaseExpandableListAdapter {
     public boolean isEmpty() {
         return super.isEmpty();
     }
+
+    public List<CategoryItem> getCategoriesHeader() {
+        return categoriesHeader;
+    }
+
+    public void setCategoriesHeader(List<CategoryItem> categoriesHeader) {
+        this.categoriesHeader = categoriesHeader;
+    }
+
+    public HashMap<String, List<FeedItemBean>> getListFeed() {
+        return listFeed;
+    }
+
+    public void setListFeed(HashMap<String, List<FeedItemBean>> listFeed) {
+        this.listFeed = listFeed;
+    }
 }

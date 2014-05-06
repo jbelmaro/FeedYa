@@ -1,5 +1,7 @@
 package com.jbelmaro.feedya.util;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -28,7 +30,8 @@ public class Profile {
     private boolean wordPressConnected;
     private String locale;
     private String fullName;
-    private String[] paymentProviderId;
+    private List<PaymentProviderID> paymentProviderId;
+    private List<PaymentSubscriptionID> paymentSubscriptionId;
     private String reader;
     private String twitterUserId;
     private String facebookUserId;
@@ -213,11 +216,11 @@ public class Profile {
         this.fullName = fullName;
     }
 
-    public String[] getPaymentProviderId() {
+    public List<PaymentProviderID> getPaymentProviderId() {
         return paymentProviderId;
     }
 
-    public void setPaymentProviderId(String[] paymentProviderId) {
+    public void setPaymentProviderId(List<PaymentProviderID> paymentProviderId) {
         this.paymentProviderId = paymentProviderId;
     }
 
@@ -283,6 +286,14 @@ public class Profile {
 
     public void setWindowsLiveId(String windowsLiveId) {
         this.windowsLiveId = windowsLiveId;
+    }
+
+    public List<PaymentSubscriptionID> getPaymentSubscriptionId() {
+        return paymentSubscriptionId;
+    }
+
+    public void setPaymentSubscriptionId(List<PaymentSubscriptionID> paymentSubscriptionId) {
+        this.paymentSubscriptionId = paymentSubscriptionId;
     }
 
 }

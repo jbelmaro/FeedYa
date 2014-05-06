@@ -6,12 +6,12 @@ import java.util.List;
 
 import org.apache.http.HttpResponse;
 
+import uk.co.senab.actionbarpulltorefresh.library.PullToRefreshLayout;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -24,7 +24,6 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -41,7 +40,7 @@ public class LecturaFragment extends ListFragment {
     private Bitmap articleIcon;
     private AddFeedTask addToList;
     private LoadFeedsTask loadFeeds;
-    private LinearLayout layout;
+    private PullToRefreshLayout layout;
     private ProgressBar dialog;
     private ListView listLectura;
     private TextView mNoResultsView;
@@ -53,18 +52,19 @@ public class LecturaFragment extends ListFragment {
         Log.i("LecturaFragment", "Item clicked: " + id);
         Intent intent = new Intent(this.getActivity(), ArticleActivity.class);
         intent.putExtra("titulo", "Últimas Noticias");
-        if (load.items.get(position).content != null)
-            intent.putExtra("noticia", load.items.get(position).content.content);
-        else
-            intent.putExtra("noticia", load.items.get(position).summary.content);
-        intent.putExtra("noticiaURL", load.items.get(position).originId);
-        intent.putExtra("noticiaTitulo", load.items.get(position).title);
-        intent.putExtra("noticiaLINK", load.items.get(position).originId);
-        intent.putExtra("autorNoticia", load.items.get(position).author);
+        intent.putExtra("noticia", listA.get(position).getContent());
+
+        intent.putExtra("noticiaURL", listA.get(position).getArticleURL());
+        intent.putExtra("noticiaTitulo", listA.get(position).getTitle());
+        intent.putExtra("noticiaLINK", listA.get(position).getArticleURL());
+        intent.putExtra("autorNoticia", listA.get(position).getAuthor());
         intent.putExtra("fechaNoticia", dateFormatted);
-        intent.putExtra("idNoticia", load.items.get(position).id);
+        intent.putExtra("idNoticia", listA.get(position).getId());
         load.items.get(position).unread = false;
-        ((TextView) v.findViewById(R.id.article_title)).setTextColor(Color.parseColor("#AAAAAA"));
+        ((ArticleItemBean) listLectura.getItemAtPosition(position)).setUnread(false);
+        SharedPreferences settings = getActivity().getSharedPreferences("FeedYa!Settings", 0);
+        String authCode = settings.getString("authCode", "0");
+        Utils.markAsReadEntry(authCode, getResources(), listA.get(position).getId());
         adapter.notifyDataSetChanged();
 
         startActivity(intent);
@@ -97,7 +97,7 @@ public class LecturaFragment extends ListFragment {
         setRetainInstance(false);
         Log.i("LecturaFragment", "tamaño: " + listA.size());
 
-        layout = (LinearLayout) inflater.inflate(R.layout.fragment_ultimahora, container, false);
+        layout = (PullToRefreshLayout) inflater.inflate(R.layout.fragment_ultimahora, container, false);
         mNoResultsView = (TextView) layout.findViewById(R.id.no_results_text_view);
         listLectura = (ListView) layout.findViewById(android.R.id.list);
         SharedPreferences settings = getActivity().getSharedPreferences("FeedYa!Settings", 0);
@@ -151,63 +151,79 @@ public class LecturaFragment extends ListFragment {
 
         @Override
         protected Boolean doInBackground(String... params) {
-            Log.i("LecturaFragment", "tamañoLoad: " + load.items.size());
 
-            if (load.items.size() > listA.size()) {
+            try {
+                Log.i("LecturaFragment", "tamañoLoad: " + load.items.size());
 
-                Log.i("LecturaFragment", "INFONOTICIA: " + load.title);
-                listA = new ArrayList<ArticleItemBean>();
-                for (int i = 0; i < load.items.size(); i++) {
-                    Date date = new Date(load.items.get(i).published);
-                    // DateFormat formatter = new SimpleDateFormat("HH:mm");
-                    // String dateFormatted = formatter.format(date);
-                    long diff = (new Date()).getTime() - date.getTime();
-                    if ((diff / 1000) < 60)
-                        dateFormatted = "hace " + Integer.toString((int) (diff / 1000)) + " seg.";
-                    else if ((diff / 60000) < 60)
-                        dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60))) + " min.";
-                    else if ((diff / (60000 * 60)) < 24)
-                        dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60))) + " horas";
-                    else
-                        dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60 * 24))) + " dias";
+                if (load.items.size() > listA.size()) {
 
-                    Log.i("LecturaFragment", "INFONOTICIA: " + load.items.get(i).originId);
-                    articleIcon = null;
+                    Log.i("LecturaFragment", "INFONOTICIA: " + load.title);
+                    listA = new ArrayList<ArticleItemBean>();
+                    String content = "";
+                    for (int i = 0; i < load.items.size(); i++) {
+                        Date date = new Date(load.items.get(i).published);
+                        // DateFormat formatter = new SimpleDateFormat("HH:mm");
+                        // String dateFormatted = formatter.format(date);
+                        long diff = (new Date()).getTime() - date.getTime();
+                        if ((diff / 1000) < 60)
+                            dateFormatted = "hace " + Integer.toString((int) (diff / 1000)) + " seg.";
+                        else if ((diff / 60000) < 60)
+                            dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60))) + " min.";
+                        else if ((diff / (60000 * 60)) < 24)
+                            dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60))) + " horas";
+                        else
+                            dateFormatted = "hace " + Integer.toString((int) (diff / (1000 * 60 * 60 * 24))) + " dias";
 
-                    if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
-
-                        listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                load.items.get(i).visual.getUrl(),
-                                load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id, load.items
-                                        .get(i).unread));
-
-                    } else {
+                        Log.i("LecturaFragment", "INFONOTICIA: " + load.items.get(i).originId);
                         articleIcon = null;
-                        listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon, load.items.get(i).originId,
-                                "", load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id,
-                                load.items.get(i).unread));
-                    }
-                }
+                        if (load.items.get(i).content != null)
+                            content = load.items.get(i).content.content;
+                        else
+                            content = load.items.get(i).summary.content;
 
+                        if ((load.items.get(i).visual != null) && !load.items.get(i).visual.getUrl().equals("none")) {
+
+                            listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon,
+                                    load.items.get(i).originId, load.items.get(i).visual.getUrl(),
+                                    load.items.get(i).origin.title + "/" + dateFormatted, load.items.get(i).id,
+                                    load.items.get(i).unread, content, load.items.get(i).author));
+
+                        } else {
+                            articleIcon = null;
+                            listA.add(new ArticleItemBean(load.items.get(i).title, articleIcon,
+                                    load.items.get(i).originId, "", load.items.get(i).origin.title + "/"
+                                            + dateFormatted, load.items.get(i).id, load.items.get(i).unread, content,
+                                    load.items.get(i).author));
+                        }
+                    }
+
+                }
+                return true;
+            } catch (NullPointerException e) {
+                return false;
             }
-            return true;
         }
 
         @Override
         protected void onPostExecute(Boolean result) {
-            dialog.setVisibility(View.GONE);
-            listLectura.setVisibility(View.VISIBLE);
+            if (result) {
+                dialog.setVisibility(View.GONE);
+                listLectura.setVisibility(View.VISIBLE);
 
-            if (activity.getActivity() != null) {
-                Log.i("LecturaFragment", "Actualizar Adapter");
+                if (activity.getActivity() != null) {
+                    Log.i("LecturaFragment", "Actualizar Adapter");
 
-                adapter = new ArticleListItemAdapter(activity.getActivity(), listA);
-                adapter.notifyDataSetChanged();
-                listLectura.invalidateViews();
-                setListAdapter(adapter);
+                    adapter = new ArticleListItemAdapter(activity.getActivity(), listA);
+                    adapter.notifyDataSetChanged();
+                    listLectura.invalidateViews();
+                    setListAdapter(adapter);
 
+                }
+            } else {
+                dialog.setVisibility(View.GONE);
+                Toast.makeText(getActivity().getApplicationContext(), "Se ha producido un error al cargar los feeds",
+                        Toast.LENGTH_LONG).show();
             }
-
         }
 
         @Override
@@ -241,10 +257,10 @@ public class LecturaFragment extends ListFragment {
 
         @Override
         protected Boolean doInBackground(String... params) {
-            try{
+            try {
                 load = Utils.LoadSavedForLater(user, authCode, resources);
-            }catch(NullPointerException e){
-                
+            } catch (NullPointerException e) {
+
             }
             return true;
         }
